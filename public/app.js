@@ -65,7 +65,7 @@ const BUSY_LINE = (label) => `……(${label}は電話に出てしまった。�
 function gameGone() {
   clearInterval(timerId); stopRec(); stopVoice(); hideHints();
   if (state) state = { ...state, status: 'gone' };
-  setNpc(GONE_LINE); setSteps(0); $('lostBox').classList.remove('hidden');
+  setNpc(GONE_LINE, null, 0, 'nervous'); setSteps(0); $('lostBox').classList.remove('hidden');
   $('sendBtn').disabled = true; $('micBtn').disabled = true;
 }
 $('lostRetry').onclick = () => { $('lostBox').classList.add('hidden'); start(stageInfo.id); };
@@ -121,7 +121,7 @@ async function start(stageId) {
   $('select').classList.add('hidden'); $('challenge').classList.add('hidden'); $('result').classList.add('hidden');
   $('playerLine').classList.add('hidden'); $('delta').textContent = '';
   render(s); hideHints(); setHintCount(s.hintsLeft ?? 3);
-  setNpc(stageInfo.intro + '\n\n' + s.history[0].text);
+  setNpc(stageInfo.intro + '\n\n' + s.history[0].text, s.history[0].expr, 0);
   speakLine(0, s.history[0].text);
   if (window.FX) FX.vs(stageInfo, s.history[0].expr);
   deadline = Date.now() + s.timeLeft * 1000; timeoutSent = false;
@@ -147,13 +147,26 @@ function onGameOverFromServer(s) {
   if (state && state.status !== 'playing') return;
   stopRec(); busy = false;
   $('npcText').classList.remove('thinking');
-  setNpc(s.history[s.history.length - 1].text);
-  speakLine(s.history.length - 1, s.history[s.history.length - 1].text);
+  const lh = s.history[s.history.length - 1];
+  setNpc(lh.text, lh.expr, 0, null, s.status);
+  speakLine(s.history.length - 1, lh.text);
   render(s);
 }
-function setNpc(text) {
+function setNpc(text, expr, delta, force, status) {
   $('npcText').classList.remove('thinking'); $('npcText').scrollTop = 0;
+  npcBubble(force || (window.Bubble ? Bubble.pickBoss(text, expr, delta, status) : 'normal'), text);
   if (window.FX) FX.type($('npcText'), text); else $('npcText').textContent = text;
+}
+// ───── 漫画の吹き出し(bubble.js)。ボス=右上の立ち絵へしっぽ / あなた=左下(手前の自分)へしっぽ
+function npcBubble(style, text) {
+  if (!window.Bubble) return;
+  const b = document.querySelector('.bubble'), narrow = innerWidth <= 1000;
+  Bubble.set(b, style, { seed: Bubble.hash(text || style), pop: true, tail: (w) => ({ side: 'top', at: Math.max(60, w - (narrow ? 70 : 110)), dx: narrow ? 14 : 30, dy: -30 }) });
+}
+function setPlayer(text) {
+  const el = $('playerLine');
+  el.querySelector('.pl-text').textContent = text; el.classList.remove('hidden');
+  if (window.Bubble) Bubble.set(el, Bubble.pickPlayer(text), { seed: Bubble.hash(text), pop: true, tail: (w, h) => ({ side: 'left', at: Math.max(20, h - 26), dx: -24, dy: 14 }) });
 }
 // ───── ボスの声: サーバの TTS(/api/tts。Gemini TTS、失敗時は OpenAI TTS)。失敗したらブラウザの speechSynthesis
 // 1つの <audio> を使い回す(最初のクリック/キーで「解錠」→ 以後は自動再生できる)。新しい台詞は前の台詞を止める
@@ -234,20 +247,21 @@ async function sendText(text) {
   text = text.trim();
   if (!text || busy || !state || state.status !== 'playing') return;
   busy = true; hideHints(); $('sendBtn').disabled = true; $('micBtn').disabled = true; $('input').value = '';
-  $('playerLine').textContent = text; $('playerLine').classList.remove('hidden');
+  setPlayer(text);
   setSteps(2); level = 0.35;
-  $('npcText').classList.add('thinking'); $('npcText').textContent = `……(${stageInfo.npcLabel}は黙ってこちらを見ている)`;
+  $('npcText').classList.add('thinking'); $('npcText').textContent = `……(${stageInfo.npcLabel}は黙ってこちらを見ている)`; npcBubble('think', 'wait');
   try {
     const s = await post('/api/turn', { id: state.id, text });
     if (s.error === 'game not found') { gameGone(); return; }
-    if (s.error && !s.history) { setNpc(BUSY_LINE(stageInfo.npcLabel)); $('input').value = text; return; }
-    if (s.error) { $('playerLine').textContent = text + '\n(時間切れ:この発言は届かなかった)'; busy = false; onGameOverFromServer(s); return; }
+    if (s.error && !s.history) { setNpc(BUSY_LINE(stageInfo.npcLabel), null, 0, 'think'); $('input').value = text; return; }
+    if (s.error) { setPlayer(text + '\n(時間切れ:この発言は届かなかった)'); busy = false; onGameOverFromServer(s); return; }
     if (s.status === 'playing') deadline = Date.now() + s.timeLeft * 1000;
     setSteps(3);
-    setNpc(s.history[s.history.length - 1].text);
+    const lh = s.history[s.history.length - 1];
+    setNpc(lh.text, lh.expr, s.last ? s.last.delta : 0, null, s.status);
     speakLine(s.history.length - 1, s.history[s.history.length - 1].text);
     render(s, s.last);
-  } catch (err) { console.warn('turn failed', err); setNpc(BUSY_LINE(stageInfo.npcLabel)); $('input').value = text; }
+  } catch (err) { console.warn('turn failed', err); setNpc(BUSY_LINE(stageInfo.npcLabel), null, 0, 'think'); $('input').value = text; }
   finally { busy = false; level = 0.15; $('sendBtn').disabled = false; $('micBtn').disabled = false; setTimeout(() => setSteps(0), 2500); }
 }
 
