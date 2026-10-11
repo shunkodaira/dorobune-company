@@ -265,7 +265,8 @@ function render(s, last) {
   if (last) {
     const d = $('delta'); d.className = 'delta ' + (last.delta > 0 ? 'up' : last.delta < 0 ? 'down' : '');
     d.textContent = `${last.delta > 0 ? '▲ +' : last.delta < 0 ? '▼ ' : '± '}${last.delta}　${last.reason || ''}`;
-    if (window.FX) FX.big(last.delta);
+    if (window.FX && !last.fatal) FX.big(last.delta);
+    if (last.fatal) { d.className = 'delta up fatal'; if (window.FX) FX.critical(stageInfo, s.fatalLabel); }
     if (last.delta < 0) { const b = document.querySelector('.bubble'); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); }
   }
   if (s.status !== 'playing') {
@@ -274,7 +275,7 @@ function render(s, last) {
     if (s.rankToken) localStorage.setItem(RANK_KEY, s.rankToken); // 役職(署名付き)を保存
     if (window.FX) FX.timerWarn(0, false);
     // 最後の台詞を少し見せてから勝敗カットイン → 結果画面
-    setTimeout(() => (window.FX ? FX.outcome(s, stageInfo) : Promise.resolve()).then(() => showResult(s)), s.loseReason === 'time' ? 1800 : 1300);
+    setTimeout(() => (window.FX ? FX.outcome(s, stageInfo) : Promise.resolve()).then(() => showResult(s)), s.loseReason === 'time' ? 1800 : last && last.fatal ? 5200 : 1300);
   }
 }
 // 進行状況は音声パネルの案内文で表示(0=待機 1=話す 2=解析 3=応答)
@@ -356,13 +357,13 @@ function showResult(s) {
     ? (s.gameClear ? '泥舟カンパニーの頂点に立った！ あなたが新しい社長だ！' : `${stageInfo.charName}を説得した！${s.jump ? '(飛び級成功！)' : ''}`)
     : timeUp ? `時間切れ。${stageInfo.npcLabel}は次の予定へ去っていった…そして届いた左遷の辞令。`
     : `${stageInfo.npcLabel}との交渉は決裂。あなたは左遷されてしまった…`;
-  $('score').innerHTML = (won ? `SCORE ${s.score} 点${s.jump ? ' <small>(飛び級×1.5)</small>' : ''}${s.hintsUsed ? ` <small>(ヒント${s.hintsUsed}回 −${s.hintsUsed * 150})</small>` : ''}` : 'SCORE 0 点') + `<span class="time-used">${ICON('timer')}使用時間 ${mmss(s.timeUsed)}${won ? '(残り ' + mmss(s.timeLeft) + ' × 2点ボーナス)' : ''}</span>`;
+  $('score').innerHTML = (won ? `SCORE ${s.score} 点${s.jump ? ' <small>(飛び級×1.5)</small>' : ''}${s.fatal ? ` <small class="fatal-bonus">(会心の一撃 +${s.fatalBonus})</small>` : ''}${s.hintsUsed ? ` <small>(ヒント${s.hintsUsed}回 −${s.hintsUsed * 150})</small>` : ''}` : 'SCORE 0 点') + `<span class="time-used">${ICON('timer')}使用時間 ${mmss(s.timeUsed)}${won ? '(残り ' + mmss(s.timeLeft) + ' × 2点ボーナス)' : ''}</span>`;
   const rc = $('rankChange');
   rc.className = 'rank-change ' + (won ? 'promo' : 'demo');
   rc.innerHTML = won
     ? `<div class="rc-head">${ICON('cracker')}発令</div><div class="rc-row"><span class="rc-before">${esc(s.rankBefore)}</span><span class="rc-arrow">➜</span><span class="rc-after">${esc(s.rankAfter)}</span></div><div class="rc-note">${s.gameClear ? '本日付をもって <b>代表取締役社長</b> に任ずる' : `本日付をもって <b>${esc(s.rankAfter)}</b> に任ずる`} <span class="seal">印</span></div>`
     : `<div class="rc-head">${ICON('chartDown')}左遷${s.rankAfter !== s.rankBefore ? '・降格' : ''}</div><div class="rc-row"><span class="rc-same">${esc(s.rankBefore)}</span><span class="rc-arrow">➜</span><span class="rc-exile">${esc(s.rankAfter)}(${esc(s.exile.replace(/\(.*\)$/, ''))})</span></div>`;
-  $('reveal').textContent = `${stageInfo.npcLabel}の弱点は「${s.weakness}」だった`;
+  $('reveal').innerHTML = (s.fatal ? `<b class="fatal-reveal">会心の一撃！ 致命的弱点「${esc(s.fatalLabel)}」を突いた</b><br>` : '') + esc(`${stageInfo.npcLabel}の弱点は「${s.weakness}」だった`);
   // もう一回: 新しい役職からまだ挑戦できる相手なら表示
   $('retryBtn').classList.add('hidden');
   post('/api/ladder', { rankToken: getRankToken() }).then(l => { const st = l.steps.find(x => x.boss && x.boss.id === s.stage); if (st && st.challengeable) $('retryBtn').classList.remove('hidden'); });

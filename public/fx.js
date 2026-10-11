@@ -120,6 +120,14 @@
     setTimeout(() => p.remove(), 1300);
   }
 
+  // 会心の一撃(致命的弱点を突いた): 集中線 + 白フラッシュ + 大見出し
+  function critical(info, label) {
+    play('whoosh'); setTimeout(() => { play('thud'); duck(1800); }, 180); setTimeout(() => play('chime'), 420); setTimeout(() => play('fanfare'), 900);
+    flashOnce('good');
+    if (!RM) { document.body.classList.remove('fx-shake'); void document.body.offsetWidth; document.body.classList.add('fx-shake'); setTimeout(() => document.body.classList.remove('fx-shake'), 500); }
+    return show(`<div class="cr-lines"></div><div class="cr-burst"></div><div class="cr-title">会心の一撃！</div><div class="cr-sub">${esc(label || '')}</div><div class="cr-boss">${esc(info.charName)}の心を撃ち抜いた！</div><div class="vs-skip">クリックでスキップ</div>`, 'cr', 2300);
+  }
+
   // 勝敗カットイン(結果画面の前)
   function outcome(s, info) {
     const won = s.status === 'won', timeUp = s.loseReason === 'time';
@@ -146,5 +154,5 @@
     if (danger && left !== lastTick) { lastTick = left; play('tick'); }
   }
 
-  window.FX = { ac, type, skipType, vs, big, outcome, timerWarn, play, RM };
+  window.FX = { ac, critical, type, skipType, vs, big, outcome, timerWarn, play, RM };
 })();

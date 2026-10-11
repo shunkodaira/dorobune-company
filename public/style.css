@@ -601,3 +601,28 @@ body.theme-crimson .bubble .bb-body,body.theme-crimson .bubble .bb-tail-line,bod
 .ladder-head .logo-img{height:min(32vh,26.5rem)}
 .ladder-head .select-rank{margin:0 0 .2rem}
 .ladder{height:min(40rem,calc(100vh - min(32vh,26.5rem) - 14.5rem));min-height:15rem;padding-top:6rem}
+/* ===== 会心の一撃 ===== */
+.fx-layer.cr{background:#000}
+.cr-lines{position:absolute;inset:-20%;background:repeating-conic-gradient(from 0deg at 50% 50%,#fff 0 1.2deg,transparent 1.2deg 6deg);opacity:.9;animation:crSpin 2.3s linear both;-webkit-mask-image:radial-gradient(circle,transparent 18%,#000 46%);mask-image:radial-gradient(circle,transparent 18%,#000 46%)}
+.cr-burst{position:absolute;left:50%;top:46%;width:62rem;height:30rem;transform:translate(-50%,-50%) rotate(-6deg);background:#ffd400;clip-path:polygon(50% 0,57% 30%,75% 4%,68% 34%,98% 18%,76% 44%,100% 52%,74% 60%,94% 88%,64% 68%,58% 100%,50% 70%,40% 100%,36% 68%,8% 92%,26% 60%,0 50%,24% 42%,4% 14%,32% 34%,26% 2%,43% 30%);animation:crBurst .45s cubic-bezier(.2,1.6,.4,1) both;filter:drop-shadow(0 0 0 #111)}
+.cr-title{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) rotate(-6deg);font:900 7.5rem/1 "DoroBrush",serif;color:#d7263d;-webkit-text-stroke:5px #111;paint-order:stroke fill;text-shadow:7px 7px 0 #fff;white-space:nowrap;animation:vsPop .5s .1s cubic-bezier(.2,1.6,.4,1) both}
+.cr-sub{position:absolute;left:50%;top:66%;transform:translate(-50%,-50%) rotate(-6deg);background:#111;color:#ffd400;font-weight:900;font-size:1.9rem;padding:.3rem 1.4rem;border:3px solid #ffd400;white-space:nowrap;animation:vsR .4s .35s both}
+.cr-boss{position:absolute;left:50%;top:76%;transform:translateX(-50%);color:#fff;font-weight:900;font-size:1.3rem;text-shadow:2px 2px 0 #000;animation:fadeIn .4s .6s both;opacity:0}
+@keyframes crSpin{from{transform:rotate(0) scale(1.4)}to{transform:rotate(12deg) scale(1)}}
+@keyframes crBurst{from{transform:translate(-50%,-50%) rotate(-6deg) scale(.2);opacity:0}}
+.delta.fatal{color:#ffd400;font-weight:900}
+.fatal-reveal{color:#ffd400}
+.fatal-bonus{color:#ff6b75}
+@media (max-width:900px){.cr-title{font-size:4rem}.cr-burst{width:36rem;height:18rem}.cr-sub{font-size:1.2rem}}
+@media (prefers-reduced-motion: reduce){.cr-lines,.cr-burst,.cr-title,.cr-sub,.cr-boss{animation:none!important;opacity:1}}
+/* ロゴをヒーローサイズに(今日の調整前の約1.8倍)。階段はその下にコンパクトに */
+.ladder-head{padding-top:.6rem}
+.ladder-head .logo{margin:0 auto}
+.ladder-head .logo-img{height:min(41vh,34rem);max-width:94vw;object-fit:contain}
+.ladder-head .select-rank{margin:-.4rem 0 0;font-size:1.15rem}.ladder-head .select-rank b{font-size:1.4rem}
+.ladder{height:calc(100vh - min(41vh,34rem) - 9.6rem);min-height:13rem;max-height:40rem;padding-top:5.2rem}
+.ladder-foot{margin-top:.5rem}
+.provider{margin-top:.3rem}
+.st-name{font-size:1.55rem;padding-bottom:.4rem}
+.st-name{font-size:1.35rem;letter-spacing:.05em}
+.step{height:max(var(--h),7.4rem)}
