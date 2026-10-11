@@ -34,22 +34,23 @@ async function loadLadder() {
   $('ladder').innerHTML = ladder.steps.map((s, i) => {
     const h = 40 + (i / (n - 1)) * 60;
     const cls = ['step', s.rank === ladder.rank ? 'current' : '', s.challengeable ? 'open' : '', s.rank < ladder.rank ? 'done' : '', !s.challengeable && s.rank > ladder.rank ? 'locked' : ''].join(' ');
-    const badge = s.challengeable ? `<div class="st-badge ${s.boss.jump ? 'jump' : ''}">${s.boss.jump ? '+2 飛び級' : '+1 挑戦'}</div>` : '';
-    const face = s.boss && (s.challengeable || s.rank < ladder.rank) ? `<img class="st-face" src="img/face_${s.boss.id}.jpg" alt="">` : (s.boss && s.rank > ladder.rank ? '<div class="st-lock">🔒</div>' : '');
-    const me = s.rank === ladder.rank ? (ladder.clear ? '<div class="me">👑<span>社長!</span></div>' : '<div class="me">🚶<span>あなた</span></div>') : '';
+    const badge = s.challengeable ? (s.boss.free ? '<div class="st-badge free">再戦</div>' : `<div class="st-badge ${s.boss.jump ? 'jump' : ''}">${s.boss.jump ? '+2 飛び級' : '+1 挑戦'}</div>`) : '';
+    const face = s.boss && (s.challengeable || s.rank < ladder.rank) ? `<img class="st-face" src="img/face_${s.boss.id}.jpg" alt="">` : (s.boss && s.rank > ladder.rank ? `<div class="st-lock">${ICON('lock', 'ロック中')}</div>` : '');
+    const me = s.rank === ladder.rank ? (ladder.clear ? `<div class="me">${ICON('crown')}<span>社長!</span></div>` : `<div class="me">${ICON('walker')}<span>あなた</span></div>`) : '';
     return `<div class="${cls}" data-rank="${s.rank}" style="--h:${h}%;--c:${STEP_COLORS[i % STEP_COLORS.length]}">${me}<div class="st-top">${badge}${face}</div><div class="st-name">${esc(s.name)}</div>${s.rank < ladder.rank && s.rank > 0 ? '<div class="st-check">✓</div>' : ''}</div>`;
   }).join('');
+  $('ladderNote').innerHTML = ladder.free ? `<b class="free-note">${ICON('trophy')}社長特権:どの上司とも再戦できます(フリー対戦・役職は社長のまま)</b>` : `${ICON('sparkle')}光っている段に挑戦できます(+1:昇進 / +2:飛び級・難易度UP)。負けると1段降格して地方へ左遷。`;
   document.querySelectorAll('.step.open').forEach(el => el.onclick = () => openChallenge(ladder.steps[Number(el.dataset.rank)]));
   $('result').classList.add('hidden'); $('challenge').classList.add('hidden'); $('select').classList.remove('hidden');
 }
 function openChallenge(step) {
   const b = step.boss; pendingStage = b.id;
   $('chFace').src = `img/face_${b.id}.jpg`;
-  $('chBadge').textContent = b.jump ? `+2 飛び級チャレンジ(難易度UP・スコア×1.5)` : `+1 昇進チャレンジ`;
-  $('chBadge').className = 'ch-badge ' + (b.jump ? 'jump' : '');
+  $('chBadge').textContent = b.free ? 'フリー対戦(社長特権)' : b.jump ? `+2 飛び級チャレンジ(難易度UP・スコア×1.5)` : `+1 昇進チャレンジ`;
+  $('chBadge').className = 'ch-badge ' + (b.free ? 'free' : b.jump ? 'jump' : '');
   $('chName').textContent = b.charName; $('chSub').textContent = b.charSub;
   $('chGoal').textContent = b.goal;
-  $('chMeta').innerHTML = ICON('timer') + esc(`制限時間 ${Math.round(b.timeLimitSec / 60)}分 / 勝てば「${step.name}」に昇進、負ければ1段降格`);
+  $('chMeta').innerHTML = ICON('timer') + esc(b.free ? `制限時間 ${Math.round(b.timeLimitSec / 60)}分 / フリー対戦:勝っても負けても役職は社長のまま` : `制限時間 ${Math.round(b.timeLimitSec / 60)}分 / 勝てば「${step.name}」に昇進、負ければ1段降格`);
   document.querySelector('.challenge-box').dataset.theme = b.theme;
   $('challenge').classList.remove('hidden');
 }
@@ -348,26 +349,26 @@ function showResult(s) {
   if (won) v = isJoumu ? '<div class="jihyo"><span>辞表</span><small>大和瀬</small></div>' : `<div class="stamp"><span>${esc(stageInfo.stampText)}</span><small>${esc(stageInfo.charName.split(' ')[0])}</small></div>`;
   else {
     const base = timeUp ? `<div class="timeup"><img src="img/${['crimson', 'gold'].includes(stageInfo.theme) ? 'empty_joumu' : 'empty_bucho'}.jpg" alt=""><span>時間切れ</span></div>` : '<div class="rejected">決裂</div>';
-    v = `<div class="fail-stack">${base}<div class="jirei-wrap late">${jireiHTML(s)}</div></div>`;
+    v = s.free ? `<div class="fail-stack">${base}</div>` : `<div class="fail-stack">${base}<div class="jirei-wrap late">${jireiHTML(s)}</div></div>`;
   }
   $('visual').innerHTML = v;
   $('clearBanner').classList.toggle('hidden', !s.gameClear);
   $('resultTitle').textContent = won ? stageInfo.winTitle : timeUp ? stageInfo.timeUpTitle : stageInfo.loseTitle;
-  $('resultMsg').textContent = won
+  $('resultMsg').textContent = s.free ? (won ? `${stageInfo.charName}との再戦に勝利！(フリー対戦)` : timeUp ? `時間切れ。${stageInfo.npcLabel}は次の予定へ去っていった…(フリー対戦)` : `${stageInfo.npcLabel}との再戦は決裂…(フリー対戦)`) : won
     ? (s.gameClear ? '泥舟カンパニーの頂点に立った！ あなたが新しい社長だ！' : `${stageInfo.charName}を説得した！${s.jump ? '(飛び級成功！)' : ''}`)
     : timeUp ? `時間切れ。${stageInfo.npcLabel}は次の予定へ去っていった…そして届いた左遷の辞令。`
     : `${stageInfo.npcLabel}との交渉は決裂。あなたは左遷されてしまった…`;
   $('score').innerHTML = (won ? `SCORE ${s.score} 点${s.jump ? ' <small>(飛び級×1.5)</small>' : ''}${s.fatal ? ` <small class="fatal-bonus">(会心の一撃 +${s.fatalBonus})</small>` : ''}${s.hintsUsed ? ` <small>(ヒント${s.hintsUsed}回 −${s.hintsUsed * 150})</small>` : ''}` : 'SCORE 0 点') + `<span class="time-used">${ICON('timer')}使用時間 ${mmss(s.timeUsed)}${won ? '(残り ' + mmss(s.timeLeft) + ' × 2点ボーナス)' : ''}</span>`;
   const rc = $('rankChange');
-  rc.className = 'rank-change ' + (won ? 'promo' : 'demo');
-  rc.innerHTML = won
+  rc.className = 'rank-change ' + (s.free ? 'free' : won ? 'promo' : 'demo');
+  rc.innerHTML = s.free ? `<div class="rc-head">${ICON('trophy')}フリー対戦</div><div class="rc-row"><span class="rc-same">役職は 代表取締役社長 のまま</span></div>` : won
     ? `<div class="rc-head">${ICON('cracker')}発令</div><div class="rc-row"><span class="rc-before">${esc(s.rankBefore)}</span><span class="rc-arrow">➜</span><span class="rc-after">${esc(s.rankAfter)}</span></div><div class="rc-note">${s.gameClear ? '本日付をもって <b>代表取締役社長</b> に任ずる' : `本日付をもって <b>${esc(s.rankAfter)}</b> に任ずる`} <span class="seal">印</span></div>`
     : `<div class="rc-head">${ICON('chartDown')}左遷${s.rankAfter !== s.rankBefore ? '・降格' : ''}</div><div class="rc-row"><span class="rc-same">${esc(s.rankBefore)}</span><span class="rc-arrow">➜</span><span class="rc-exile">${esc(s.rankAfter)}(${esc(s.exile.replace(/\(.*\)$/, ''))})</span></div>`;
   $('reveal').innerHTML = (s.fatal ? `<b class="fatal-reveal">会心の一撃！ 致命的弱点「${esc(s.fatalLabel)}」を突いた</b><br>` : '') + esc(`${stageInfo.npcLabel}の弱点は「${s.weakness}」だった`);
   // もう一回: 新しい役職からまだ挑戦できる相手なら表示
   $('retryBtn').classList.add('hidden');
   post('/api/ladder', { rankToken: getRankToken() }).then(l => { const st = l.steps.find(x => x.boss && x.boss.id === s.stage); if (st && st.challengeable) $('retryBtn').classList.remove('hidden'); });
-  renderResultStats(s.skills);
+  renderResultStats(s.skills); retryLabel(s);
   $('result').classList.remove('hidden');
 }
 const STAT_NAMES = { logic: ['論理力', 'tie'], empathy: ['共感力', 'heart'], presentation: ['プレゼン力', 'balloon'], trust: ['信頼度', 'star'] };
@@ -440,5 +441,6 @@ $('logBtn').onclick = () => {
 };
 $('logClose').onclick = () => $('logOverlay').classList.add('hidden');
 $('retryBtn').onclick = () => start(state.stage);
+function retryLabel(s) { $('retryBtn').textContent = s && s.free ? 'もう一戦' : 'もう一回'; }
 $('toSelectBtn').onclick = () => loadLadder();
 loadLadder();

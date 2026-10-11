@@ -27,6 +27,8 @@ const baseLimit = (st) => Number(process.env.TIME_LIMIT_SEC) || st.timeLimitSec;
 
 // 挑戦の条件: 自分の役職の +1 か +2 のボスのみ
 function challengeInfo(rank, stage) {
+  // 社長(最上位)になったら「社長特権」: どの上司ともフリー対戦できる(勝っても負けても役職は変わらない)
+  if (rank === RANKS.length - 1) return { jump: false, free: true, start: stage.start, deltaMax: stage.deltaMax, deltaMin: stage.deltaMin, limitSec: Math.max(30, baseLimit(stage)), scoreMul: 1 };
   const diff = stage.rank - rank;
   if (diff !== 1 && diff !== 2) return null;
   const jump = diff === 2;
@@ -42,8 +44,10 @@ function challengeInfo(rank, stage) {
 
 function newGame(stage, rank, ch, forcedWeakness) {
   const weakness = stage.weaknesses.find(w => w.id === forcedWeakness) || pick(stage.weaknesses);
-  const scene = shuffle([weakness.hint, ...shuffle(stage.decoys).slice(0, 2)]);
-  return { id: crypto.randomUUID(), stage, weakness, scene, gauge: ch.start, deltaMax: ch.deltaMax, deltaMin: ch.deltaMin, limitSec: ch.limitSec, scoreMul: ch.scoreMul, jump: ch.jump,
+  const fatal = require('./fatal').FATAL[stage.id];
+  // 気になるもの: ランダム弱点のヒント + 致命的弱点の手がかり + 関係ない小物1つ
+  const scene = shuffle([weakness.hint, ...(fatal ? [fatal.clue] : []), ...shuffle(stage.decoys).slice(0, fatal ? 1 : 2)]);
+  return { id: crypto.randomUUID(), stage, weakness, scene, gauge: ch.start, deltaMax: ch.deltaMax, deltaMin: ch.deltaMin, limitSec: ch.limitSec, scoreMul: ch.scoreMul, jump: ch.jump, free: !!ch.free,
     turn: 0, status: 'playing', history: [{ role: 'npc', text: stage.opening, expr: require('./expr').opening(stage.id) }], log: [],
     skillSum: { logic: 0, empathy: 0, presentation: 0, trust: 0 }, skillN: 0, startedAt: Date.now(), rankBefore: rank };
 }
@@ -92,7 +96,7 @@ const elapsedSec = (g) => ((g.finishedAt || Date.now()) - g.startedAt) / 1000;
 const timeLeft = (g) => Math.max(0, Math.round(g.limitSec - elapsedSec(g)));
 function finish(g, status, reason) {
   g.status = status; g.loseReason = reason; g.finishedAt = Date.now();
-  g.rankAfter = status === 'won' ? g.stage.rank : Math.max(0, g.rankBefore - 1); // 勝利=相手の役職へ / 敗北=1段降格
+  g.rankAfter = g.free ? g.rankBefore : status === 'won' ? g.stage.rank : Math.max(0, g.rankBefore - 1); // 勝利=相手の役職へ / 敗北=1段降格 / フリー対戦は変化なし
 }
 // 時間切れ処理(サーバ側で判定)。終了したら true
 function checkTimeUp(g) {
@@ -104,22 +108,26 @@ function checkTimeUp(g) {
 
 // スコア = (基礎点 + 残り秒数 × 2) × 飛び級倍率
 const HINT_MAX = 3, HINT_PENALTY = 150; // ヒントは1戦3回まで、1回ごとにスコア -150
-const score = (g) => Math.max(0, Math.round((g.stage.scoreBase + 2 * timeLeft(g)) * g.scoreMul) - HINT_PENALTY * (g.hintsUsed || 0));
+const FATAL_BONUS = require('./fatal').FATAL_BONUS; // 会心の一撃(致命的弱点)で勝つとボーナス
+const score = (g) => Math.max(0, Math.round((g.stage.scoreBase + 2 * timeLeft(g) + (g.fatalHit ? FATAL_BONUS : 0)) * g.scoreMul) - HINT_PENALTY * (g.hintsUsed || 0));
 
 function stageInfo(s, g) {
-  return { id: s.id, rank: s.rank, rankName: s.rankName, title: s.title, goal: s.goal, charName: s.charName, charSub: s.charSub, gaugeLabel: s.gaugeLabel, faces: s.faces, intro: s.intro,
+  const fc = require('./fatal').FATAL[s.id];
+  // 役員クラス(気になるもの非表示)は、致命的弱点の手がかりを導入文でさりげなく見せる
+  const intro = fc && !s.showScene ? `${s.intro}\n(ふと目に入った:${fc.clue})` : s.intro;
+  return { id: s.id, rank: s.rank, rankName: s.rankName, title: s.title, goal: s.goal, charName: s.charName, charSub: s.charSub, gaugeLabel: s.gaugeLabel, faces: s.faces, intro,
     tips: s.tips, timeLimitSec: g ? g.limitSec : baseLimit(s), timeUpTitle: s.timeUpTitle, winTitle: s.winTitle, loseTitle: s.loseTitle, stampText: s.stampText,
-    objective: s.objective, npcLabel: s.npcLabel, theme: s.theme, img: s.img, exprs: Object.keys(require('./expr').EXPRS), showScene: s.showScene, jump: g ? g.jump : undefined };
+    objective: s.objective, npcLabel: s.npcLabel, theme: s.theme, img: s.img, exprs: Object.keys(require('./expr').EXPRS), showScene: s.showScene, jump: g ? g.jump : undefined, free: g ? !!g.free : undefined };
 }
 
 function ladderInfo(rank) {
   return {
-    rank, rankName: RANKS[rank], ranks: RANKS, clear: rank === RANKS.length - 1,
+    rank, rankName: RANKS[rank], ranks: RANKS, clear: rank === RANKS.length - 1, free: rank === RANKS.length - 1,
     steps: RANKS.map((name, r) => {
       const st = BY_RANK[r];
       const ch = st ? challengeInfo(rank, st) : null;
       return { rank: r, name, boss: st ? { id: st.id, charName: st.charName, charSub: st.charSub, goal: st.goal, objective: st.objective, img: st.img, theme: st.theme,
-        timeLimitSec: ch ? ch.limitSec : baseLimit(st), jump: ch ? ch.jump : false } : null, challengeable: !!ch };
+        timeLimitSec: ch ? ch.limitSec : baseLimit(st), jump: ch ? ch.jump : false, free: ch ? !!ch.free : false } : null, challengeable: !!ch };
     }),
   };
 }
@@ -130,8 +138,9 @@ function publicState(g) {
     s.weakness = g.weakness.label;
     s.rankBefore = RANKS[g.rankBefore]; s.rankAfter = RANKS[g.rankAfter];
     s.rankToken = rankToken(g.rankAfter); s.jump = g.jump;
-    s.gameClear = g.status === 'won' && g.rankAfter === RANKS.length - 1;
-    if (g.status === 'won') s.score = score(g);
+    s.free = !!g.free;
+    s.gameClear = !g.free && g.status === 'won' && g.rankAfter === RANKS.length - 1;
+    if (g.status === 'won') { s.score = score(g); if (g.fatalHit) { s.fatal = true; s.fatalLabel = require('./fatal').FATAL[g.stage.id].label; s.fatalBonus = Math.round(FATAL_BONUS * g.scoreMul); } }
     else { s.exile = g.stage.exile[g.loseReason] || g.stage.exile.zero; s.exileSigner = g.stage.exileSigner; }
   }
   return s;

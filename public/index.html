@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>泥舟カンパニー</title>
-<link rel="icon" type="image/png" href="img/favicon.png?v=20261011q">
-<link rel="apple-touch-icon" href="img/apple-touch-icon.png?v=20261011q">
-<link rel="stylesheet" href="style.css?v=20261011q">
+<link rel="icon" type="image/png" href="img/favicon.png?v=20261011s">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png?v=20261011s">
+<link rel="stylesheet" href="style.css?v=20261011s">
 </head>
 <body class="theme-cyan">
 <div id="bg"></div>
@@ -84,11 +84,11 @@
 <div id="select" class="overlay ladder-overlay">
   <div class="ladder-box">
     <div class="ladder-head">
-      <h1 class="logo"><picture><source srcset="img/logo.webp?v=20261011q" type="image/webp"><img class="logo-img" src="img/logo.png?v=20261011q" alt="泥舟カンパニー" width="900" height="489"></picture></h1>
+      <h1 class="logo"><picture><source srcset="img/logo.webp?v=20261011s" type="image/webp"><img class="logo-img" src="img/logo.png?v=20261011s" alt="泥舟カンパニー" width="900" height="489"></picture></h1>
       <div class="select-rank">現在の役職:<b id="selectRank">一般社員</b></div>
     </div>
     <div class="ladder" id="ladder"></div>
-    <div class="ladder-foot"><span>✨ 光っている段に挑戦できます(+1:昇進 / +2:飛び級・難易度UP)。負けると1段降格して地方へ左遷。</span><span class="foot-btns"><button id="memResetBtn" class="ghost small" title="上司たちの過去の対戦の記憶を消す">🧠 記憶をリセット</button><button id="resetBtn" class="ghost small">最初からやり直す</button></span></div>
+    <div class="ladder-foot"><span id="ladderNote">光っている段に挑戦できます(+1:昇進 / +2:飛び級・難易度UP)。負けると1段降格して地方へ左遷。</span><span class="foot-btns"><button id="memResetBtn" class="ghost small" title="上司たちの過去の対戦の記憶を消す" data-icon="brain">記憶をリセット</button><button id="resetBtn" class="ghost small">最初からやり直す</button></span></div>
     <div class="provider" id="provider"></div>
   </div>
 </div>
@@ -134,15 +134,15 @@
   </div>
 </div>
 <div id="bgmCard" class="bgm-card hidden" aria-label="ロビーBGM">
-  <div class="bgm-head"><button id="bgmToggle" type="button" class="bgm-btn">🎵</button><span id="bgmLabel">BGM</span></div>
+  <div class="bgm-head"><button id="bgmToggle" type="button" class="bgm-btn" aria-label="BGM ON/OFF"></button><span id="bgmLabel">BGM</span></div>
   <div id="bgmFrame" class="bgm-frame"><div id="bgmPlayer"></div></div>
   <div id="bgmNote" class="bgm-note hidden"></div>
   <div id="bgmCredit" class="bgm-credit hidden"></div>
 </div>
-<script src="fx.js?v=20261011q"></script>
-<script src="icons.js?v=20261011q"></script>
-<script src="bubble.js?v=20261011q"></script>
-<script src="bgm.js?v=20261011q"></script>
-<script src="app.js?v=20261011q"></script>
+<script src="fx.js?v=20261011s"></script>
+<script src="icons.js?v=20261011s"></script>
+<script src="bubble.js?v=20261011s"></script>
+<script src="bgm.js?v=20261011s"></script>
+<script src="app.js?v=20261011s"></script>
 </body>
 </html>

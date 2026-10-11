@@ -1,7 +1,7 @@
 // ───── ロビーBGM(出世の階段画面だけで流す)。設定はサーバの config.js(/api/bgm)
 // ・ローカルの mp3 があればそれを、無ければ YouTube IFrame Player API(プレイヤーは小さく表示したまま)で再生
 // ・ブラウザの自動再生制限のため、最初のクリック/キー操作のあとに再生開始。ループ再生
-// ・🎵ボタンでON/OFF(localStorageに記憶)。対戦開始でフェードアウトして一時停止、階段に戻ると再開
+// ・音符ボタンでON/OFF(localStorageに記憶)。対戦開始でフェードアウトして一時停止、階段に戻ると再開
 (() => {
   const KEY = 'dorobune-bgm';
   const $ = (id) => document.getElementById(id);
@@ -11,7 +11,7 @@
 
   function note(msg) { failed = true; $('bgmNote').textContent = msg; $('bgmNote').classList.remove('hidden'); $('bgmFrame').classList.add('hidden'); syncBtn(); }
   function syncBtn() {
-    $('bgmToggle').textContent = enabled && !failed ? '🎵' : '🔇';
+    $('bgmToggle').innerHTML = enabled && !failed ? ICON('music', 'BGM ON') : ICON('mute', 'BGM OFF');
     $('bgmToggle').title = enabled ? 'BGMをオフにする' : 'BGMをオンにする';
     $('bgmLabel').textContent = failed ? 'BGM' : enabled ? 'BGM ON' : 'BGM OFF';
   }

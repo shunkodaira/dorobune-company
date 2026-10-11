@@ -139,10 +139,10 @@
       const clear = s.gameClear, joumu = s.stage === 'joumu';
       const stamp = clear ? 'GAME<br>CLEAR' : joumu ? '辞表' : esc(info.stampText || '承認');
       play('whoosh'); setTimeout(() => { play('thud'); duck(); }, 520); setTimeout(() => play('fanfare'), 700);
-      return show(`<div class="oc-band ${clear ? 'gold' : 'win'}"></div><div class="oc-title">${clear ? '社長就任！' : '説得成功！'}</div><div class="oc-sub">${clear ? '泥舟カンパニーの頂点へ' : joumu ? '常務、辞任' : '昇進'}</div><div class="oc-stamp ${clear ? 'gold' : joumu ? 'st-jihyo' : ''}">${stamp}</div>`, 'oc ' + (clear ? 'oc-clear' : 'oc-win'), 2100);
+      return show(`<div class="oc-band ${clear ? 'gold' : 'win'}"></div><div class="oc-title">${clear ? '社長就任！' : '説得成功！'}</div><div class="oc-sub">${clear ? '泥舟カンパニーの頂点へ' : s.free ? 'フリー対戦' : joumu ? '常務、辞任' : '昇進'}</div><div class="oc-stamp ${clear ? 'gold' : joumu ? 'st-jihyo' : ''}">${stamp}</div>`, 'oc ' + (clear ? 'oc-clear' : 'oc-win'), 2100);
     }
     play('whoosh'); setTimeout(() => { play('thud'); duck(); }, 520); setTimeout(() => play('gloom'), 650);
-    return show(`<div class="oc-band lose"></div><div class="oc-title">交渉決裂</div><div class="oc-sub">左遷</div><div class="oc-stamp lose">却下</div><div class="oc-snow"></div>`, 'oc oc-lose', 2000);
+    return show(`<div class="oc-band lose"></div><div class="oc-title">交渉決裂</div><div class="oc-sub">${s.free ? 'フリー対戦' : '左遷'}</div><div class="oc-stamp lose">却下</div><div class="oc-snow"></div>`, 'oc oc-lose', 2000);
   }
 
   // 残り30秒: タイマーが赤く脈打ち、毎秒小さなチック音

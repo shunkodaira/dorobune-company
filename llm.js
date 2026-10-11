@@ -1,6 +1,7 @@
 // LLMプロバイダ(LLM_PROVIDER で切替: openai | xai | anthropic | gemini | claude-cli | codex-cli | mock | auto)
 const { execFile } = require('child_process');
 const { loreFor } = require('./lore');
+const FT = require('./fatal');
 
 function buildSystemPrompt(g, rules) {
   return `${g.stage.systemPrompt(g)}
@@ -12,6 +13,7 @@ function buildSystemPrompt(g, rules) {
 - 懸念や反論は、気持ち・立場・価値観のことばで返す(例:「それで部下は守れるのか」「俺の立場も考えろ」)。reason にも「証拠不足」「数字がない」とは書かない。
 
 ${loreFor(g.stage.id)}
+${FT.promptNote(g)}
 ${g.memoryNote ? '\n' + g.memoryNote + '\n' : ''}
 # 注意
 - 社内の知識・過去の記憶・噂は、会話に自然に絡むときだけ短く触れる(毎回は言わない)。知らないことは作り話をせず、ぼかす。
@@ -195,6 +197,12 @@ async function openingLine(g) {
 }
 
 // ヒント: 上司の直前の台詞に対する「切り返し案」を2〜3個。弱点は名指しせず、そちらへ誘導する
+// 3回目(最後)のヒントだけ、致命的弱点(一発逆転)の方向をほのめかす
+function fatalHintNote(g) {
+  const f = FT.FATAL[g.stage.id];
+  if (!f || (g.hintsUsed || 0) < 2) return '';
+  return `【今回は最後のヒント】相手には一発逆転の「致命的弱点」がある: ${f.label} — ${f.secret}\n手がかり: ${f.clue}\n3案のうち1つ目は必ずこの致命的弱点の方向へ誘導する。angle は「${f.hintAngle}」のような方向の示唆にし、line は手がかりに気づかせる問いかけや入口にとどめる(核心の決め台詞は書かない)。\n\n`;
+}
 async function hintSuggestions(g) {
   const st = g.stage;
   const convo = g.history.slice(-8).map(h => (h.role === 'player' ? '若手: ' : `${st.npcLabel}: `) + h.text.replace(/\s+/g, ' ').slice(0, 220)).join('\n');
@@ -206,7 +214,7 @@ async function hintSuggestions(g) {
 相手の地雷(避けるべき言動): ${st.angerRules.map(r => r.label).join('、')}
 部屋の様子: ${g.scene.join(' / ')}
 
-上司の最後の台詞に対して、プレイヤーが次に言うと良さそうな切り返しを3つ考える。
+${fatalHintNote(g)}上司の最後の台詞に対して、プレイヤーが次に言うと良さそうな切り返しを3つ考える。
 - 1つは弱点の方向へさりげなく誘導する。angle は「部長ご自身の忙しさに触れてみると…」のような“方向”の示唆だけにし、line は相手に探りを入れる問いかけや話の入口にとどめる(弱点の核心そのもの=「${g.weakness.label}」に当たる結論・数字・決め台詞は書かない。プレイヤーが自分で気づく余地を残す)
 - 残り2つは、相手の直前の懸念や気持ちに寄り添って答える案、妥協案など、別の角度にする
 - 各案は {"angle": "狙い(15字以内)", "line": "そのまま言える台詞の例(60字以内、丁寧語)"}
@@ -221,6 +229,8 @@ async function hintSuggestions(g) {
     .filter(h => h.line && !leak.test(h.angle));
 }
 function mockHints(g) {
+  const f = FT.FATAL[g.stage.id];
+  if (f && (g.hintsUsed || 0) >= 2) return [{ angle: f.hintAngle.slice(0, 20), line: '部屋の中で、ふと気になったものがあるんです。少しお聞きしてもいいですか？' }, ...mockHints({ ...g, hintsUsed: 0 }).slice(0, 2)];
   return [
     { angle: '懸念に答える', line: 'ご心配の点はもっともです。リスクへの対策と、責任者を具体的にご説明させてください。' },
     { angle: '小さく始める', line: 'まずは期間を区切って小さく試し、うまくいかなければすぐやめます。' },

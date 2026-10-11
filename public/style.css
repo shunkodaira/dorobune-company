@@ -101,7 +101,7 @@ button.ghost{background:transparent;border:1px solid var(--border)}
 .stage-card.final{border-color:rgba(255,120,120,.5)}
 .stage-card.final:hover{box-shadow:0 0 24px rgba(255,80,100,.6)}
 .stage-card.locked{cursor:not-allowed;filter:grayscale(1) brightness(.5)}
-.stage-card.locked .thumb::after{content:"🔒 STAGE 1 をクリアで解放";display:flex;height:100%;align-items:center;justify-content:center;font-size:1.3rem;font-weight:bold;background:rgba(0,0,0,.5)}
+.stage-card.locked .thumb::after{content:"STAGE 1 をクリアで解放";display:flex;height:100%;align-items:center;justify-content:center;font-size:1.3rem;font-weight:bold;background:rgba(0,0,0,.5)}
 .stage-card .clear{float:right;color:#ffd84d;font-size:1rem}
 .provider{margin-top:1.2rem;font-size:.95rem;opacity:.6}
 .log-box{position:static;width:min(52rem,90vw);max-height:80vh;overflow:auto}
@@ -626,3 +626,19 @@ body.theme-crimson .bubble .bb-body,body.theme-crimson .bubble .bb-tail-line,bod
 .st-name{font-size:1.55rem;padding-bottom:.4rem}
 .st-name{font-size:1.35rem;letter-spacing:.05em}
 .step{height:max(var(--h),7.4rem)}
+/* 社長特権: フリー対戦 */
+.st-badge.free{background:#ffd400;color:#111;border-color:#111}
+.ch-badge.free{background:#ffd400;color:#111}
+.free-note{color:#ffd400}
+.rank-change.free .rc-head .ico{width:1.5em;height:1.5em;margin-right:.35rem}
+.rank-change.free .rc-same{color:#ffd400;font-size:1.2rem}
+
+/* ---- 階段/ロビーの手描きアイコン ---- */
+.me .ico,.st-lock .ico{filter:drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff) drop-shadow(3px 3px 0 rgba(0,0,0,.7))}
+.me .ico{width:3.2rem;height:3.2rem}
+.st-lock{opacity:1}.st-lock .ico{width:2.6rem;height:2.6rem}
+.step.open.current .me{bottom:calc(100% + 7.4rem)}
+.bgm-btn{display:inline-flex;align-items:center;justify-content:center}
+.bgm-btn .ico{width:1.35rem;height:1.35rem;filter:none}
+#ladderNote .ico{margin-right:.25em}
+#memResetBtn .ico{margin-right:.25em;width:1.15em;height:1.15em}
