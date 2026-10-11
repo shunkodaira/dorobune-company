@@ -64,17 +64,19 @@ function wavHeader(dataLen) {
 // gpt-4o-mini-tts はまれに最後の一文を読み落とすので、末尾に「……」の間を足す(実測: 足すと9/9で全文読了)
 const PAD = '……';
 const WAV_HEAD = { 'content-type': 'audio/wav', 'cache-control': 'private, max-age=86400' };
-async function openaiSpeech(stageId, text, res) {
+async function openaiSpeech(stageId, text, res, expr) {
   const v = VOICES[stageId] || VOICES.bucho;
+  const ex = (VOICES.EXPR_STYLE || {})[expr];
+  const instr = v.instructions + (ex ? ` この台詞は${ex}言う。` : '') + ' 最後の一文まで省略せずに読み切ること。';
   const speed = +(v.speed / playbackRate()).toFixed(2);
   // 生PCM → 長さの正しい WAV(Safari の Blob/WebAudio でも確実に再生できる形式。Worker 版と同じ)
-  const file = path.join(CACHE, hash(['v3', OPENAI_MODEL, v.voice, speed, v.instructions, text]) + '.wav');
+  const file = path.join(CACHE, hash([VOICES.VERSION, 'v3', OPENAI_MODEL, v.voice, speed, instr, text]) + '.wav');
   if (fs.existsSync(file)) { res.writeHead(200, { ...WAV_HEAD, 'x-tts': 'openai;cache=hit', 'content-length': fs.statSync(file).size }); return fs.createReadStream(file).pipe(res); }
   const t0 = Date.now();
   const r = await fetch('https://api.openai.com/v1/audio/speech', {
     method: 'POST',
     headers: { authorization: `Bearer ${process.env.OPENAI_API_KEY}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ model: OPENAI_MODEL, voice: v.voice, input: text + PAD, instructions: v.instructions + ' 最後の一文まで省略せずに読み切ること。', speed, response_format: 'pcm' }),
+    body: JSON.stringify({ model: OPENAI_MODEL, voice: v.voice, input: text + PAD, instructions: instr, speed, response_format: 'pcm' }),
   });
   if (!r.ok) throw new Error(`openai tts ${r.status} ${(await r.text()).slice(0, 200)}`);
   let pcm = Buffer.from(await r.arrayBuffer());
@@ -92,7 +94,7 @@ async function openaiSpeech(stageId, text, res) {
 function geminiKey(stageId, text, expr) {
   const v = (VOICES.GEMINI || {})[stageId] || { voice: 'Charon', style: '早口で' };
   const style = [v.style, (VOICES.EXPR_STYLE || {})[expr]].filter(Boolean).join('、');
-  return { v, style, file: path.join(CACHE, hash(['g1', v.voice, style, text]) + '.wav') };
+  return { v, style, file: path.join(CACHE, hash([VOICES.VERSION, 'g1', v.voice, style, text]) + '.wav') };
 }
 async function geminiSpeech(stageId, text, res, { expr, stream } = {}, MODEL = GEMINI_MODEL) {
   const { v, style, file } = geminiKey(stageId, text, expr);
@@ -173,7 +175,7 @@ async function streamSpeech(stageId, rawText, res, opts = {}) {
     if (!hasOpenAI()) { res.writeHead(502, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: 'tts failed' })); }
     console.error('[tts] gemini unavailable → OpenAI TTS');
   }
-  try { return await openaiSpeech(stageId, text, res); }
+  try { return await openaiSpeech(stageId, text, res, opts.expr); }
   catch (e) {
     console.error('[tts error]', e.message);
     if (!res.headersSent) { res.writeHead(502, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'tts failed' })); }

@@ -67,17 +67,19 @@ async function cachePut(env, key, buf) {
 
 // ───── OpenAI(mp3)
 const PAD = '……';
-async function openaiSpeech(env, ctx, stageId, text) {
+async function openaiSpeech(env, ctx, stageId, text, expr) {
   const v = VOICES[stageId] || VOICES.bucho;
+  const ex = (VOICES.EXPR_STYLE || {})[expr];
+  const instr = v.instructions + (ex ? ` この台詞は${ex}言う。` : '') + ' 最後の一文まで省略せずに読み切ること。';
   const speed = +(v.speed / playbackRate()).toFixed(2);
   // 生PCM(24kHz/16bit/mono)を受け取り、長さの正しい WAV にして返す(Safari の Blob/WebAudio でも確実に再生できる形式)
-  const key = 'o2:' + hash(['v3', OPENAI_MODEL(), v.voice, speed, v.instructions, text]);
+  const key = 'o2:' + hash([VOICES.VERSION, 'v3', OPENAI_MODEL(), v.voice, speed, instr, text]);
   const hit = await cacheGet(env, key);
   if (hit) return new Response(hit, { headers: { ...WAV_HEAD, 'x-tts': 'openai;cache=hit', 'content-length': String(hit.byteLength) } });
   const r = await fetch('https://api.openai.com/v1/audio/speech', {
     method: 'POST',
     headers: { authorization: `Bearer ${env_().OPENAI_API_KEY}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ model: OPENAI_MODEL(), voice: v.voice, input: text + PAD, instructions: v.instructions + ' 最後の一文まで省略せずに読み切ること。', speed, response_format: 'pcm' }),
+    body: JSON.stringify({ model: OPENAI_MODEL(), voice: v.voice, input: text + PAD, instructions: instr, speed, response_format: 'pcm' }),
   });
   if (!r.ok) throw new Error(`openai tts ${r.status} ${(await r.text()).slice(0, 200)}`);
   let pcm = Buffer.from(await r.arrayBuffer());
@@ -92,7 +94,7 @@ async function openaiSpeech(env, ctx, stageId, text) {
 function geminiKey(stageId, text, expr) {
   const v = (VOICES.GEMINI || {})[stageId] || { voice: 'Charon', style: '早口で' };
   const style = [v.style, (VOICES.EXPR_STYLE || {})[expr]].filter(Boolean).join('、');
-  return { v, style, key: 'g:' + hash(['g1', v.voice, style, text]) };
+  return { v, style, key: 'g:' + hash([VOICES.VERSION, 'g1', v.voice, style, text]) };
 }
 async function geminiSpeech(env, ctx, { v, style, key }, text, stream, MODEL) {
   const ac = new AbortController();
@@ -182,6 +184,6 @@ export async function speech(env, ctx, stageId, rawText, { expr, stream } = {}) 
     }
     if (!hasOpenAI()) return fail();
   }
-  try { return await openaiSpeech(env, ctx, stageId, text); }
+  try { return await openaiSpeech(env, ctx, stageId, text, expr); }
   catch (e) { console.error('[tts error]', e.message); return fail(); }
 }
