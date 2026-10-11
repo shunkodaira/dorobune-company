@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>泥舟カンパニー</title>
+<link rel="icon" type="image/png" href="img/favicon.png?v=20261011g">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png?v=20261011g">
+<link rel="stylesheet" href="style.css?v=20261011g">
+</head>
+<body class="theme-cyan">
+<div id="bg"></div>
+<div id="bg2"></div>
+<img id="sprite" class="sprite hidden" alt="">
+<img id="sprite2" class="sprite sprite-top hidden" alt="">
+<div id="vignette"></div>
+
+<!-- 上段 -->
+<div class="panel title-panel">
+  <div class="title" id="titleMain">STAGE 1</div>
+  <div class="goal"><div class="ptitle">◎ 目標</div><div id="objective">AI導入の企画書を承認してもらう</div></div>
+  <div class="timer"><div class="ptitle">⏱ 残り時間</div><div id="timer">15:00</div></div>
+</div>
+
+<!-- 中央: 会話 -->
+<div class="dialogue">
+  <div class="player-line hidden" id="playerLine"></div>
+  <div class="panel bubble">
+    <img id="faceImg" src="img/face_bucho.jpg" alt="">
+    <div class="bubble-body">
+      <div class="npc-name" id="npcName"></div>
+      <div class="npc-text" id="npcText"></div>
+      <div id="lostBox" class="lost-box hidden"><button id="lostRetry" type="button">もう一度挑戦する</button><button id="lostLadder" type="button" class="ghost">階段に戻る</button></div>
+    </div>
+    <div class="bubble-tools">
+      <button id="ttsBtn" class="icon-btn" title="上司の声(読み上げ)">🔈</button>
+      <button id="logBtn" class="icon-btn" title="会話ログ">📜</button>
+    </div>
+  </div>
+</div>
+
+<!-- 下段 -->
+<div class="panel scene-panel">
+  <div class="ptitle">👀 気になるもの</div>
+  <ul id="scene" class="scene"></ul>
+</div>
+
+<div class="hint-box hidden" id="hintBox"><div class="hb-head">💡 切り返しのヒント <small>(クリックで入力欄へ。編集してから送信できます)</small><button type="button" id="hintClose" class="icon-btn">✕</button></div><div id="hintList"></div></div>
+<button id="voicePrompt" class="voice-prompt hidden" type="button">🔊 クリックで音声ON</button>
+<div class="bottom-row">
+<div class="panel voice-panel">
+  <div class="vp-msg" id="vpMsg">話したいことを、マイクに向かって話してください</div>
+  <div class="vp-row">
+    <div class="wave" id="waveL"></div>
+    <button id="micBtn" class="mic" title="音声入力">🎙️</button>
+    <div class="wave" id="waveR"></div>
+  </div>
+  <div class="vp-label" id="micLabel">音声で送信</div>
+  <form id="form" class="text-form">
+    <input id="input" maxlength="400" autocomplete="off" placeholder="キーボードで入力もできます(Enterで送信)">
+    <button id="hintBtn" type="button" class="hint-btn" title="上司への切り返し案を出す(1戦3回まで・1回ごとにスコア-150)">💡ヒント<b id="hintLeft">3</b></button>
+    <button id="sendBtn">送信</button>
+  </form>
+</div>
+<div class="panel gauge-panel">
+    <div class="ptitle"><span id="gaugeLabel">機嫌ゲージ</span> <b id="gaugeNum">20</b>/100 <span id="face">😠</span></div>
+    <div class="gauge"><div id="gaugeBar"></div></div>
+    <div id="delta" class="delta"></div>
+  </div>
+</div>
+
+
+<!-- 出世の階段(ステージ選択) -->
+<div id="select" class="overlay ladder-overlay">
+  <div class="ladder-box">
+    <div class="ladder-head">
+      <h1 class="logo"><picture><source srcset="img/logo.webp?v=20261011g" type="image/webp"><img class="logo-img" src="img/logo.png?v=20261011g" alt="泥舟カンパニー" width="900" height="489"></picture></h1>
+      <div class="select-rank">現在の役職:<b id="selectRank">一般社員</b></div>
+    </div>
+    <div class="ladder" id="ladder"></div>
+    <div class="ladder-foot"><span>✨ 光っている段に挑戦できます(+1:昇進 / +2:飛び級・難易度UP)。負けると1段降格して地方へ左遷。</span><span class="foot-btns"><button id="memResetBtn" class="ghost small" title="上司たちの過去の対戦の記憶を消す">🧠 記憶をリセット</button><button id="resetBtn" class="ghost small">最初からやり直す</button></span></div>
+    <div class="provider" id="provider"></div>
+  </div>
+</div>
+
+<!-- 挑戦確認 -->
+<div id="challenge" class="overlay hidden">
+  <div class="challenge-box">
+    <img id="chFace" alt="">
+    <div class="ch-info">
+      <div class="ch-badge" id="chBadge"></div>
+      <div class="ch-name" id="chName"></div>
+      <div class="ch-sub" id="chSub"></div>
+      <div class="ch-goal">◎ <span id="chGoal"></span></div>
+      <div class="ch-meta" id="chMeta"></div>
+      <div class="result-btns"><button id="chGo">挑戦する ▶</button><button id="chBack" class="ghost">やめておく</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ログ -->
+<div id="logOverlay" class="overlay hidden">
+  <div class="panel log-box"><div class="ptitle">会話ログ <button id="logClose" class="icon-btn">✕</button></div><div id="log"></div></div>
+</div>
+
+<!-- 結果 -->
+<div id="result" class="overlay hidden">
+  <div class="result-box">
+    <div class="clear-banner hidden" id="clearBanner">🏆 GAME CLEAR 🏆</div>
+    <div id="visual"></div>
+    <div class="result-info">
+    <h2 id="resultTitle"></h2>
+    <p id="resultMsg"></p>
+    <p class="score" id="score"></p>
+    <div class="rank-change" id="rankChange"></div>
+    <p class="reveal" id="reveal"></p>
+    <div class="result-stats" id="resultStats"></div>
+    <p class="stat-comment" id="statComment"></p>
+    <div class="result-btns">
+            <button id="retryBtn">もう一回</button>
+      <button id="toSelectBtn" class="ghost">出世の階段へ</button>
+    </div>
+    </div>
+  </div>
+</div>
+<div id="bgmCard" class="bgm-card hidden" aria-label="ロビーBGM">
+  <div class="bgm-head"><button id="bgmToggle" type="button" class="bgm-btn">🎵</button><span id="bgmLabel">BGM</span></div>
+  <div id="bgmFrame" class="bgm-frame"><div id="bgmPlayer"></div></div>
+  <div id="bgmNote" class="bgm-note hidden"></div>
+  <div id="bgmCredit" class="bgm-credit hidden"></div>
+</div>
+<script src="bgm.js?v=20261011g"></script>
+<script src="app.js?v=20261011g"></script>
+</body>
+</html>

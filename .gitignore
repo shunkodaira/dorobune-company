@@ -1,0 +1,7 @@
+.env
+.secret
+data/
+tts-cache/
+node_modules/
+*.log
+.DS_Store

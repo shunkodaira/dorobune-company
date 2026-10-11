@@ -1,0 +1,14 @@
+{
+  "name": "dorobune-company",
+  "version": "1.0.0",
+  "private": true,
+  "description": "泥舟カンパニー — LLMの上司を説得して出世の階段をのぼる、音声対応の説得ゲーム",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "mock": "LLM_PROVIDER=mock node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
