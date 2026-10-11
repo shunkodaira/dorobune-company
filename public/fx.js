@@ -146,5 +146,5 @@
     if (danger && left !== lastTick) { lastTick = left; play('tick'); }
   }
 
-  window.FX = { type, skipType, vs, big, outcome, timerWarn, play, RM };
+  window.FX = { ac, type, skipType, vs, big, outcome, timerWarn, play, RM };
 })();

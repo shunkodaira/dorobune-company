@@ -587,3 +587,17 @@ body.theme-crimson .bubble .bb-body,body.theme-crimson .bubble .bb-tail-line,bod
 #face .ico-face{filter:drop-shadow(1.5px 0 0 #fff) drop-shadow(-1.5px 0 0 #fff) drop-shadow(0 1.5px 0 #fff) drop-shadow(0 -1.5px 0 #fff) drop-shadow(2px 2px 0 rgba(0,0,0,.6));width:2.6rem;height:2.6rem}
 .icon-btn .ico{width:1.7rem;height:1.7rem}
 .time-used .ico{margin-right:.3rem}
+/* ボスが話している/音声を準備中の表示(控えめ) */
+.bubble .npc-name::after{content:"";display:inline-block;vertical-align:middle;margin-left:.5em;width:1.3em;height:.85em;opacity:0;transition:opacity .2s;background:linear-gradient(#ffd400,#ffd400) 0 100%/22% 40% no-repeat,linear-gradient(#ffd400,#ffd400) 50% 100%/22% 80% no-repeat,linear-gradient(#ffd400,#ffd400) 100% 100%/22% 55% no-repeat}
+.bubble.voice-on .npc-name::after{opacity:1;animation:speakBars .6s ease-in-out infinite alternate}
+.bubble.voice-loading .npc-name::after{opacity:.55;animation:speakWait 1s ease-in-out infinite}
+@keyframes speakBars{0%{background-size:22% 30%,22% 90%,22% 50%}50%{background-size:22% 85%,22% 40%,22% 95%}100%{background-size:22% 55%,22% 100%,22% 30%}}
+@keyframes speakWait{50%{opacity:.15}}
+.bubble.voice-on #ttsBtn{box-shadow:0 0 0 2px #111,0 0 0 4px #ffd400}
+.bubble.bb-shout .npc-name::after{background-image:linear-gradient(#111,#111),linear-gradient(#111,#111),linear-gradient(#111,#111)}
+@media (prefers-reduced-motion: reduce){.bubble.voice-on .npc-name::after,.bubble.voice-loading .npc-name::after{animation:none}}
+/* ロゴをさらに約1.4倍(上端に付けず、階段と重ならないよう階段の高さを調整) */
+.ladder-head{padding-top:.9rem}
+.ladder-head .logo-img{height:min(32vh,26.5rem)}
+.ladder-head .select-rank{margin:0 0 .2rem}
+.ladder{height:min(40rem,calc(100vh - min(32vh,26.5rem) - 14.5rem));min-height:15rem;padding-top:6rem}

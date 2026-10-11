@@ -169,37 +169,84 @@ function setPlayer(text) {
   if (window.Bubble) Bubble.set(el, Bubble.pickPlayer(text), { seed: Bubble.hash(text), pop: true, tail: (w, h) => ({ side: 'left', at: Math.max(20, h - 26), dx: -24, dy: 14 }) });
 }
 // ───── ボスの声: サーバの TTS(/api/tts。Gemini TTS、失敗時は OpenAI TTS)。失敗したらブラウザの speechSynthesis
-// 1つの <audio> を使い回す(最初のクリック/キーで「解錠」→ 以後は自動再生できる)。新しい台詞は前の台詞を止める
+// 自動再生の方針:
+//  ・最初のクリック/キー入力(挑戦する・送信・マイク・Enter など)で「解錠」: 共有 AudioContext を resume + 無音を再生し、
+//    使い回す1つの <audio> でも無音を再生しておく(Safari は一度ジェスチャーで再生した要素なら以後の play() を許可する)
+//  ・Safari は Range 非対応のサーバ音声を <audio> で直接再生できないことがあるため、fetch → Blob URL にして再生
+//    それでも play() が拒否されたら、解錠済みの AudioContext でデコードして再生(WebAudio は要素の自動再生制限を受けない)
+//  ・Chrome などはストリーミング(s=1)で、届いた分からすぐ再生。新しい台詞は前の台詞を止める
 const IS_SAFARI = /^((?!chrome|android|crios|fxios|edg).)*safari/i.test(navigator.userAgent);
-const voiceEl = new Audio(); voiceEl.preload = 'auto';
-let ttsRate = 1; // Gemini TTS は少しゆったりめなので再生速度を上げる(音程は保たれる)
+const voiceEl = new Audio(); voiceEl.preload = 'auto'; voiceEl.setAttribute('playsinline', '');
+let ttsRate = 1; // Gemini TTS は少しゆったりめなので再生速度を上げる(<audio> では音程は保たれる)
 const SILENT = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
-let voiceSeq = 0, unlocked = false, pendingVoice = null, audioCtx = null;
+let voiceSeq = 0, elUnlocked = false, pendingVoice = null, blobUrl = null, bufSrc = null;
+const actx = () => (window.FX && FX.ac ? FX.ac() : null);
+window.__voiceLog = []; // テスト用: 再生の成否
+const vlog = (ev) => { window.__voiceLog.push(ev); if (window.__voiceLog.length > 50) window.__voiceLog.shift(); };
 function unlockAudio() {
-  if (unlocked) return; unlocked = true;
-  try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); audioCtx.resume(); } catch {}
-  if (!voiceEl.src || voiceEl.src === SILENT || voiceEl.paused) { voiceEl.src = SILENT; voiceEl.play().catch(() => {}); }
+  const c = actx();
+  if (c) { try { if (c.state !== 'running') c.resume(); const s = c.createBufferSource(); s.buffer = c.createBuffer(1, 1, 22050); s.connect(c.destination); s.start(0); } catch {} }
+  if (!elUnlocked && voiceEl.paused) {
+    voiceEl.src = SILENT;
+    const p = voiceEl.play(); if (p) p.then(() => { elUnlocked = true; vlog('unlocked'); }).catch(() => {});
+  }
+  if (pendingVoice && tts) { const p = pendingVoice; pendingVoice = null; $('voicePrompt').classList.add('hidden'); speakLine(p.idx, p.text); }
 }
-['pointerdown', 'keydown', 'touchstart'].forEach(ev => window.addEventListener(ev, unlockAudio, { capture: true }));
-function stopVoice() { voiceSeq++; pendingVoice = null; voiceEl.pause(); if ('speechSynthesis' in window) speechSynthesis.cancel(); $('voicePrompt')?.classList.add('hidden'); }
+['pointerdown', 'keydown', 'touchend', 'click'].forEach(ev => window.addEventListener(ev, unlockAudio, { capture: true }));
+function setSpeaking(st) { const b = document.querySelector('.bubble'); if (!b) return; b.classList.toggle('voice-loading', st === 'loading'); b.classList.toggle('voice-on', st === 'on'); }
+voiceEl.addEventListener('playing', () => { if (voiceEl.src !== SILENT) setSpeaking('on'); });
+voiceEl.addEventListener('ended', () => setSpeaking(null));
+function stopVoice() {
+  voiceSeq++; pendingVoice = null; voiceEl.pause();
+  if (bufSrc) { try { bufSrc.onended = null; bufSrc.stop(); } catch {} bufSrc = null; }
+  if (blobUrl) { const u = blobUrl; blobUrl = null; setTimeout(() => URL.revokeObjectURL(u), 15000); } // すぐ破棄すると WebKit のメディア読み込み中に落ちることがある
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  setSpeaking(null); $('voicePrompt')?.classList.add('hidden');
+}
 function speakLine(idx, text) {
   stopVoice();
   if (!tts || !text) return;
   if (!serverTts || !state) return say(text);
-  // Safari は長さ不定のWAVストリームが苦手なので、完成したWAVを受け取る(s=0)。他のブラウザは届いた分から再生(s=1)
-  const seq = voiceSeq, url = `/api/tts?id=${encodeURIComponent(state.id)}&i=${idx}&s=${IS_SAFARI ? 0 : 1}`;
+  const seq = voiceSeq, live = () => seq === voiceSeq;
+  const base = `/api/tts?id=${encodeURIComponent(state.id)}&i=${idx}`;
   let fell = false;
-  const fallback = () => { if (fell || seq !== voiceSeq) return; fell = true; say(text); };
-  voiceEl.onerror = () => { if (seq === voiceSeq && voiceEl.src.includes('/api/tts')) fallback(); };
-  voiceEl.defaultPlaybackRate = ttsRate; voiceEl.src = url; voiceEl.playbackRate = ttsRate;
-  voiceEl.play().catch((e) => {
-    if (seq !== voiceSeq) return;
-    if (e && e.name === 'NotAllowedError') { pendingVoice = { idx, text }; $('voicePrompt').classList.remove('hidden'); return; } // 自動再生ブロック → ワンタップで再生
-    if (e && e.name === 'AbortError') return;
-    fallback();
-  });
+  const fallback = (why) => { if (fell || !live()) return; fell = true; vlog('fallback:' + why); setSpeaking(null); say(text); };
+  const blocked = () => { if (!live()) return; vlog('blocked'); setSpeaking(null); pendingVoice = { idx, text }; $('voicePrompt').classList.remove('hidden'); };
+  // WebAudio で再生(要素の再生が拒否された時の保険)
+  const playBuffer = async (ab) => {
+    const c = actx(); if (!c || c.state !== 'running') return blocked();
+    try {
+      const buf = await c.decodeAudioData(ab.slice(0)); if (!live()) return;
+      const src = c.createBufferSource(); src.buffer = buf; src.playbackRate.value = Math.min(ttsRate, 1.05);
+      src.connect(c.destination); src.onended = () => { if (bufSrc === src) { bufSrc = null; setSpeaking(null); } };
+      bufSrc = src; src.start(0); setSpeaking('on'); vlog('play:webaudio');
+    } catch (e) { fallback('decode'); }
+  };
+  const playEl = (src, onBlocked) => {
+    voiceEl.onerror = () => { if (live() && voiceEl.src === src) fallback('media-error'); };
+    voiceEl.src = src; voiceEl.defaultPlaybackRate = ttsRate; voiceEl.playbackRate = ttsRate;
+    if ('preservesPitch' in voiceEl) voiceEl.preservesPitch = true;
+    const p = voiceEl.play();
+    if (p) p.then(() => { if (live()) { elUnlocked = true; vlog('play:element'); } }).catch((e) => {
+      if (!live()) return;
+      if (e && e.name === 'NotAllowedError') return onBlocked();
+      if (e && e.name === 'AbortError') return;
+      fallback('play-' + (e && e.name));
+    });
+  };
+  setSpeaking('loading');
+  if (!IS_SAFARI) {
+    // 届いた分からすぐ再生。拒否されたら完成版を取り直して WebAudio で
+    return playEl(base + '&s=1', () => fetch(base + '&s=0').then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error('http ' + r.status))).then(ab => live() && playBuffer(ab)).catch(() => fallback('fetch')));
+  }
+  let ctype = 'audio/wav';
+  fetch(base + '&s=0').then(r => { if (!r.ok) throw new Error('http ' + r.status); ctype = (r.headers.get('content-type') || ctype).split(';')[0]; return r.arrayBuffer(); }).then((ab) => {
+    if (!live()) return;
+    blobUrl = URL.createObjectURL(new Blob([ab], { type: ctype }));
+    playEl(blobUrl, () => playBuffer(ab));
+  }).catch(() => fallback('fetch'));
 }
-$('voicePrompt').onclick = () => { const p = pendingVoice; $('voicePrompt').classList.add('hidden'); unlocked = false; unlockAudio(); if (p) speakLine(p.idx, p.text); };
+$('voicePrompt').onclick = () => { const p = pendingVoice; $('voicePrompt').classList.add('hidden'); pendingVoice = null; if (p) speakLine(p.idx, p.text); };
 function say(text) {
   if (!('speechSynthesis' in window)) return;
   speechSynthesis.cancel();
