@@ -215,7 +215,9 @@ function speakLine(idx, text) {
   const blocked = () => { if (!live()) return; vlog('blocked'); setSpeaking(null); pendingVoice = { idx, text }; $('voicePrompt').classList.remove('hidden'); };
   // WebAudio で再生(要素の再生が拒否された時の保険)
   const playBuffer = async (ab) => {
-    const c = actx(); if (!c || c.state !== 'running') return blocked();
+    const c = actx();
+    if (c && c.state !== 'running') { try { await c.resume(); } catch {} }
+    if (!c || c.state !== 'running') return blocked();
     try {
       const buf = await c.decodeAudioData(ab.slice(0)); if (!live()) return;
       const src = c.createBufferSource(); src.buffer = buf; src.playbackRate.value = Math.min(ttsRate, 1.05);
@@ -223,15 +225,18 @@ function speakLine(idx, text) {
       bufSrc = src; src.start(0); setSpeaking('on'); vlog('play:webaudio');
     } catch (e) { fallback('decode'); }
   };
-  const playEl = (src, onBlocked) => {
-    voiceEl.onerror = () => { if (live() && voiceEl.src === src) fallback('media-error'); };
+  const playEl = (src, onBlocked, onStuck) => {
+    voiceEl.onerror = () => { if (!live() || voiceEl.src !== src) return; if (onStuck) { const f = onStuck; onStuck = null; vlog('el-error→webaudio'); f(); } else fallback('media-error'); };
+    // 見張り: play() が成功扱いでも音が進まない(Safari で稀にある)なら WebAudio に切り替える
+    if (onStuck) setTimeout(() => { if (live() && onStuck && voiceEl.src === src && voiceEl.currentTime === 0 && !bufSrc) { const f = onStuck; onStuck = null; voiceEl.pause(); vlog('stuck→webaudio'); f(); } }, 2500);
     voiceEl.src = src; voiceEl.defaultPlaybackRate = ttsRate; voiceEl.playbackRate = ttsRate;
     if ('preservesPitch' in voiceEl) voiceEl.preservesPitch = true;
     const p = voiceEl.play();
     if (p) p.then(() => { if (live()) { elUnlocked = true; vlog('play:element'); } }).catch((e) => {
       if (!live()) return;
-      if (e && e.name === 'NotAllowedError') return onBlocked();
+      if (e && e.name === 'NotAllowedError') { onStuck = null; return onBlocked(); }
       if (e && e.name === 'AbortError') return;
+      if (onStuck) { const f = onStuck; onStuck = null; vlog('play-' + (e && e.name) + '→webaudio'); return f(); }
       fallback('play-' + (e && e.name));
     });
   };
@@ -244,7 +249,7 @@ function speakLine(idx, text) {
   fetch(base + '&s=0').then(r => { if (!r.ok) throw new Error('http ' + r.status); ctype = (r.headers.get('content-type') || ctype).split(';')[0]; return r.arrayBuffer(); }).then((ab) => {
     if (!live()) return;
     blobUrl = URL.createObjectURL(new Blob([ab], { type: ctype }));
-    playEl(blobUrl, () => playBuffer(ab));
+    playEl(blobUrl, () => playBuffer(ab), () => playBuffer(ab));
   }).catch(() => fallback('fetch'));
 }
 $('voicePrompt').onclick = () => { const p = pendingVoice; $('voicePrompt').classList.add('hidden'); pendingVoice = null; if (p) speakLine(p.idx, p.text); };

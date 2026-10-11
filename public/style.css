@@ -651,3 +651,25 @@ body.theme-crimson .bubble .bb-body,body.theme-crimson .bubble .bb-tail-line,bod
 .oc-win .oc-title.ink,.oc-clear .oc-title.ink{color:#111;--ink-c:#fff;--ink-sh:#111}
 .vs-mark.ink{color:#ffd400;--ink-w:.12em}
 .fx-pop.ink{--ink-w:.16em}
+/* ---- 吹き出しの文字を必ず SVG の手前に(Safari で z-index:-1 の SVG が文字の上に描かれる不具合の対策)+全種類で高コントラスト ---- */
+.bb>.bb-svg{z-index:0!important}
+.bb>:not(.bb-svg){position:relative;z-index:1}
+.bubble.bb .npc-text{color:#f4f7ff;-webkit-text-fill-color:currentColor;opacity:1}
+.bubble.bb .npc-name{color:#ffd400;-webkit-text-fill-color:currentColor}
+.bubble.bb-angry .npc-text{color:#fff6d8;font-weight:700;text-shadow:0 1px 0 #000,0 0 6px rgba(0,0,0,.6)}
+.bubble.bb-angry .npc-name{color:#ffd400;text-shadow:0 1px 0 #000}
+.bubble.bb-angry .bb-body,.bubble.bb-angry .bb-tail-line,.bubble.bb-angry .bb-tail-fill{fill:#2a0606}
+.bubble.bb-shout .npc-text{color:#111;-webkit-text-fill-color:#111}
+.bubble.bb-shout .npc-name{color:#a50015;-webkit-text-fill-color:#a50015}
+.bubble.bb-nervous .npc-text,.bubble.bb-think .npc-text,.bubble.bb-calm .npc-text{color:#f4f7ff}
+.player-line.bb .pl-text{color:#111;-webkit-text-fill-color:#111;opacity:1}
+.bubble.bb-angry,.bubble.bb-shout{padding:1.45rem 1.8rem 1.05rem}
+/* 役員フロア(theme-crimson)の塗りが叫び/怒り/焦り/納得の塗りを上書きしていた不具合の修正(黄色い叫び吹き出しが暗赤になり黒文字が見えなかった) */
+body.theme-crimson .bubble.bb-shout .bb-body,body.theme-crimson .bubble.bb-shout .bb-tail-line,body.theme-crimson .bubble.bb-shout .bb-tail-fill,body .bubble.bb-shout .bb-body,body .bubble.bb-shout .bb-tail-line,body .bubble.bb-shout .bb-tail-fill{fill:#ffd400}
+body.theme-crimson .bubble.bb-angry .bb-body,body.theme-crimson .bubble.bb-angry .bb-tail-line,body.theme-crimson .bubble.bb-angry .bb-tail-fill{fill:#2a0606}
+body.theme-crimson .bubble.bb-nervous .bb-body,body.theme-crimson .bubble.bb-nervous .bb-tail-line,body.theme-crimson .bubble.bb-nervous .bb-tail-fill{fill:#0f1418}
+body.theme-crimson .bubble.bb-calm .bb-body,body.theme-crimson .bubble.bb-calm .bb-tail-line,body.theme-crimson .bubble.bb-calm .bb-tail-fill{fill:#1d1806}
+body .player-line.bb .bb-body,body .player-line.bb .bb-tail-line,body .player-line.bb .bb-tail-fill,body .player-line.bb .bb-dot{fill:#fff}
+body .player-line.bb-think .bb-body{fill:#f4f4f4}
+.bb .bb-inner{fill:none!important;stroke:rgba(255,212,0,.45);stroke-width:1.5}
+.player-line.bb .bb-inner{stroke:rgba(0,0,0,.25)}

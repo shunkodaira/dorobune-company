@@ -25,7 +25,18 @@ function retryAfterSec(msg) {
   const p = (u) => { const x = m[1].match(new RegExp('([\\d.]+)' + u)); return x ? +x[1] : 0; };
   return Math.max(5, Math.ceil(p('h') * 3600 + p('m(?!s)') * 60 + p('s')));
 }
-const cooldown = new Map();
+const cooldown = new Map(); // isolate 内のメモ。KV にも保存して全 isolate で共有(無料枠切れの Gemini を毎回試して遅くならないように)
+function setCooldown(env, ctx, model, sec) {
+  cooldown.set(model, Date.now() + sec * 1000);
+  if (env.TTS_CACHE) ctx.waitUntil(env.TTS_CACHE.put('cd:' + model, String(Date.now() + sec * 1000), { expirationTtl: Math.max(60, Math.ceil(sec)) }).catch(() => {}));
+}
+async function onCooldown(env, model) {
+  if ((cooldown.get(model) || 0) > Date.now()) return true;
+  if (!env.TTS_CACHE) return false;
+  const v = Number(await env.TTS_CACHE.get('cd:' + model, { cacheTtl: 60 }) || 0);
+  if (v > Date.now()) { cooldown.set(model, v); return true; }
+  return false;
+}
 function clean(text) {
   return String(text || '').replace(/[（(][^）)]{0,80}[）)]/g, '').replace(/[「」『』]/g, '').replace(/[<>]/g, '')
     .replace(/…+|\.{3,}/g, '…').replace(/\n+/g, ' ').trim().slice(0, 1000);
@@ -59,18 +70,22 @@ const PAD = '……';
 async function openaiSpeech(env, ctx, stageId, text) {
   const v = VOICES[stageId] || VOICES.bucho;
   const speed = +(v.speed / playbackRate()).toFixed(2);
-  const key = 'o:' + hash(['v2', OPENAI_MODEL(), v.voice, speed, v.instructions, text]);
+  // 生PCM(24kHz/16bit/mono)を受け取り、長さの正しい WAV にして返す(Safari の Blob/WebAudio でも確実に再生できる形式)
+  const key = 'o2:' + hash(['v3', OPENAI_MODEL(), v.voice, speed, v.instructions, text]);
   const hit = await cacheGet(env, key);
-  if (hit) return new Response(hit, { headers: { ...MP3_HEAD, 'x-tts': 'openai;cache=hit' } });
+  if (hit) return new Response(hit, { headers: { ...WAV_HEAD, 'x-tts': 'openai;cache=hit', 'content-length': String(hit.byteLength) } });
   const r = await fetch('https://api.openai.com/v1/audio/speech', {
     method: 'POST',
     headers: { authorization: `Bearer ${env_().OPENAI_API_KEY}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ model: OPENAI_MODEL(), voice: v.voice, input: text + PAD, instructions: v.instructions + ' 最後の一文まで省略せずに読み切ること。', speed, response_format: 'mp3' }),
+    body: JSON.stringify({ model: OPENAI_MODEL(), voice: v.voice, input: text + PAD, instructions: v.instructions + ' 最後の一文まで省略せずに読み切ること。', speed, response_format: 'pcm' }),
   });
   if (!r.ok) throw new Error(`openai tts ${r.status} ${(await r.text()).slice(0, 200)}`);
-  const buf = await r.arrayBuffer();
-  ctx.waitUntil(cachePut(env, key, buf));
-  return new Response(buf, { headers: { ...MP3_HEAD, 'x-tts': 'openai;cache=miss' } });
+  let pcm = Buffer.from(await r.arrayBuffer());
+  if (pcm.length % 2) pcm = pcm.subarray(0, pcm.length - 1);
+  if (!pcm.length) throw new Error('openai tts: no audio');
+  const wav = Buffer.concat([wavHeader(pcm.length), pcm]);
+  ctx.waitUntil(cachePut(env, key, wav));
+  return new Response(wav, { headers: { ...WAV_HEAD, 'x-tts': 'openai;cache=miss', 'content-length': String(wav.length) } });
 }
 
 // ───── Gemini(SSE の生PCM → WAV)。stream=true は最初の音が届いた時点から流す
@@ -98,8 +113,8 @@ async function geminiSpeech(env, ctx, { v, style, key }, text, stream, MODEL) {
   if (!r.ok) {
     clearTimeout(timer);
     const msg = (await r.text()).slice(0, 300);
-    if (r.status === 429) cooldown.set(MODEL, Date.now() + retryAfterSec(msg) * 1000);
-    else if (r.status === 401 || r.status === 403 || /API key/i.test(msg)) cooldown.set(MODEL, Date.now() + 600e3);
+    const sec = r.status === 429 ? retryAfterSec(msg) : (r.status === 401 || r.status === 403 || /API key/i.test(msg)) ? 600 : 0;
+    if (sec) setCooldown(env, ctx, MODEL, sec);
     throw new Error(`gemini tts ${MODEL} ${r.status} ${msg.slice(0, 160)}`);
   }
   async function* pcmChunks() {
@@ -161,7 +176,7 @@ export async function speech(env, ctx, stageId, rawText, { expr, stream } = {}) 
     const hit = await cacheGet(env, k.key);
     if (hit) return new Response(hit, { headers: { ...WAV_HEAD, 'x-tts': 'gemini;cache=hit', 'content-length': String(hit.byteLength) } });
     for (const model of [GEMINI_MODEL(), GEMINI_FALLBACK_MODEL()].filter((m, i, a) => m && a.indexOf(m) === i)) {
-      if ((cooldown.get(model) || 0) > Date.now()) continue;
+      if (await onCooldown(env, model)) continue;
       try { return await geminiSpeech(env, ctx, k, text, stream, model); }
       catch (e) { console.error('[tts gemini fallback]', e.message); }
     }

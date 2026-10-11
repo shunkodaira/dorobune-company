@@ -63,32 +63,32 @@ function wavHeader(dataLen) {
 // ───── OpenAI(mp3 をストリームで転送)
 // gpt-4o-mini-tts はまれに最後の一文を読み落とすので、末尾に「……」の間を足す(実測: 足すと9/9で全文読了)
 const PAD = '……';
+const WAV_HEAD = { 'content-type': 'audio/wav', 'cache-control': 'private, max-age=86400' };
 async function openaiSpeech(stageId, text, res) {
   const v = VOICES[stageId] || VOICES.bucho;
   const speed = +(v.speed / playbackRate()).toFixed(2);
-  const file = path.join(CACHE, hash(['v2', OPENAI_MODEL, v.voice, speed, v.instructions, text]) + '.mp3');
-  const head = { 'content-type': 'audio/mpeg', 'cache-control': 'private, max-age=86400' };
-  if (fs.existsSync(file)) { res.writeHead(200, { ...head, 'x-tts': 'openai;cache=hit', 'content-length': fs.statSync(file).size }); return fs.createReadStream(file).pipe(res); }
+  // 生PCM → 長さの正しい WAV(Safari の Blob/WebAudio でも確実に再生できる形式。Worker 版と同じ)
+  const file = path.join(CACHE, hash(['v3', OPENAI_MODEL, v.voice, speed, v.instructions, text]) + '.wav');
+  if (fs.existsSync(file)) { res.writeHead(200, { ...WAV_HEAD, 'x-tts': 'openai;cache=hit', 'content-length': fs.statSync(file).size }); return fs.createReadStream(file).pipe(res); }
   const t0 = Date.now();
   const r = await fetch('https://api.openai.com/v1/audio/speech', {
     method: 'POST',
     headers: { authorization: `Bearer ${process.env.OPENAI_API_KEY}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ model: OPENAI_MODEL, voice: v.voice, input: text + PAD, instructions: v.instructions + ' 最後の一文まで省略せずに読み切ること。', speed, response_format: 'mp3' }),
+    body: JSON.stringify({ model: OPENAI_MODEL, voice: v.voice, input: text + PAD, instructions: v.instructions + ' 最後の一文まで省略せずに読み切ること。', speed, response_format: 'pcm' }),
   });
   if (!r.ok) throw new Error(`openai tts ${r.status} ${(await r.text()).slice(0, 200)}`);
-  res.writeHead(200, { ...head, 'x-tts': 'openai;cache=miss' });
-  const chunks = []; let first = 0;
-  for await (const c of r.body) { if (!first) first = Date.now() - t0; chunks.push(Buffer.from(c)); res.write(c); }
-  res.end();
-  const buf = Buffer.concat(chunks);
-  fs.writeFile(file + '.tmp', buf, (e) => { if (!e) fs.rename(file + '.tmp', file, () => {}); });
-  console.log(JSON.stringify({ tts: stageId, provider: 'openai', voice: v.voice, chars: text.length, bytes: buf.length, firstByteMs: first, totalMs: Date.now() - t0 }));
+  let pcm = Buffer.from(await r.arrayBuffer());
+  if (pcm.length % 2) pcm = pcm.subarray(0, pcm.length - 1);
+  if (!pcm.length) throw new Error('openai tts: no audio');
+  const wav = Buffer.concat([wavHeader(pcm.length), pcm]);
+  res.writeHead(200, { ...WAV_HEAD, 'x-tts': 'openai;cache=miss', 'content-length': wav.length }); res.end(wav);
+  fs.writeFile(file + '.tmp', wav, (e) => { if (!e) fs.rename(file + '.tmp', file, () => {}); });
+  console.log(JSON.stringify({ tts: stageId, provider: 'openai', voice: v.voice, chars: text.length, bytes: wav.length, totalMs: Date.now() - t0 }));
 }
 
 // ───── Gemini(SSE で生PCMを受け取り、WAVとして返す)
 // stream=true: 最初の音が届いた時点でヘッダ(長さ不定)を送り、届いた分から流す(Chrome/Firefox向け)
 // stream=false: 全部そろってから正しい長さのWAVを返す(Safari向け)
-const WAV_HEAD = { 'content-type': 'audio/wav', 'cache-control': 'private, max-age=86400' };
 function geminiKey(stageId, text, expr) {
   const v = (VOICES.GEMINI || {})[stageId] || { voice: 'Charon', style: '早口で' };
   const style = [v.style, (VOICES.EXPR_STYLE || {})[expr]].filter(Boolean).join('、');
