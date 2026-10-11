@@ -1,0 +1,21 @@
+// 泥舟カンパニー — Cloudflare Workers 公開版の設定(ローカルの Node 版は server.js のまま)
+// secrets(値はリポジトリに入れない): OPENAI_API_KEY / GEMINI_API_KEY / RANK_SECRET  → `wrangler secret put <NAME>`
+{
+  
+  "name": "dorobune-company",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-08-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
+  "durable_objects": {
+    "bindings": [
+      { "name": "GAME", "class_name": "GameDO" },
+      { "name": "PLAYER", "class_name": "PlayerDO" },
+      { "name": "LIMIT", "class_name": "LimitDO" }
+    ]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GameDO", "PlayerDO", "LimitDO"] }],
+  "kv_namespaces": [{ "binding": "TTS_CACHE", "id": "0eef0afb38f04974bc4115e876360d5c" }],
+  "observability": { "enabled": true }
+}

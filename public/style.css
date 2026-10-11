@@ -642,3 +642,12 @@ body.theme-crimson .bubble .bb-body,body.theme-crimson .bubble .bb-tail-line,bod
 .bgm-btn .ico{width:1.35rem;height:1.35rem;filter:none}
 #ladderNote .ico{margin-right:.25em}
 #memResetBtn .ico{margin-right:.25em;width:1.15em;height:1.15em}
+
+/* ---- カットインの文字: にじみ無しのくっきり劇画文字(太ゴシック+黒い太フチ+硬い影1枚。ぼかし・ズレ重ね無し) ---- */
+.ink{font-family:"Hiragino Kaku Gothic StdN","Hiragino Sans","Noto Sans JP","Noto Sans CJK JP",sans-serif!important;font-weight:900!important;-webkit-text-stroke:0!important;paint-order:normal!important;text-shadow:none!important;filter:none!important;letter-spacing:.02em;isolation:isolate}
+.ink::before{content:attr(data-text);position:absolute;left:0;top:0;z-index:-1;color:var(--ink-c,#111);-webkit-text-stroke:var(--ink-w,.17em) var(--ink-c,#111);text-shadow:var(--ink-sx,.07em) var(--ink-sx,.07em) 0 var(--ink-sh,#111);pointer-events:none;white-space:nowrap}
+.cr-title.ink{color:#e8102b;font-size:7rem}
+.oc-title.ink{color:#fff}
+.oc-win .oc-title.ink,.oc-clear .oc-title.ink{color:#111;--ink-c:#fff;--ink-sh:#111}
+.vs-mark.ink{color:#ffd400;--ink-w:.12em}
+.fx-pop.ink{--ink-w:.16em}

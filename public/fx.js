@@ -99,7 +99,7 @@
     const face = `img/face_${info.id}_${expr || 'yoyu'}.jpg`;
     return show(`<div class="vs-band b1"></div><div class="vs-band b2"></div>
       <div class="vs-you"><div class="vs-rank">YOU</div><div class="vs-name">あなた</div></div>
-      <div class="vs-mark">VS</div>
+      <div class="vs-mark ink" data-text="VS">VS</div>
       <div class="vs-boss"><img src="${face}" alt=""><div class="vs-info"><div class="vs-rank">${esc(info.rank === 6 ? '最終決戦' : info.rankName + '戦')}</div><div class="vs-name">${esc(info.charName)}</div><div class="vs-goal">${esc(info.objective)}</div></div></div>
       <div class="vs-skip">クリックでスキップ</div>`, 'vs', 1600);
   }
@@ -116,7 +116,7 @@
   }
   function flashOnce(kind) { flash.className = 'fx-flash'; void flash.offsetWidth; flash.className = 'fx-flash on ' + kind; }
   function pop(text, kind) {
-    const p = document.createElement('div'); p.className = 'fx-pop ' + kind; p.textContent = text; document.body.appendChild(p);
+    const p = document.createElement('div'); p.className = 'fx-pop ink ' + kind; p.textContent = text; p.dataset.text = text; document.body.appendChild(p);
     setTimeout(() => p.remove(), 1300);
   }
 
@@ -125,7 +125,7 @@
     play('whoosh'); setTimeout(() => { play('thud'); duck(1800); }, 180); setTimeout(() => play('chime'), 420); setTimeout(() => play('fanfare'), 900);
     flashOnce('good');
     if (!RM) { document.body.classList.remove('fx-shake'); void document.body.offsetWidth; document.body.classList.add('fx-shake'); setTimeout(() => document.body.classList.remove('fx-shake'), 500); }
-    return show(`<div class="cr-lines"></div><div class="cr-burst"></div><div class="cr-title">会心の一撃！</div><div class="cr-sub">${esc(label || '')}</div><div class="cr-boss">${esc(info.charName)}の心を撃ち抜いた！</div><div class="vs-skip">クリックでスキップ</div>`, 'cr', 2300);
+    return show(`<div class="cr-lines"></div><div class="cr-burst"></div><div class="cr-title ink" data-text="会心の一撃！">会心の一撃！</div><div class="cr-sub">${esc(label || '')}</div><div class="cr-boss">${esc(info.charName)}の心を撃ち抜いた！</div><div class="vs-skip">クリックでスキップ</div>`, 'cr', 2300);
   }
 
   // 勝敗カットイン(結果画面の前)
@@ -133,16 +133,16 @@
     const won = s.status === 'won', timeUp = s.loseReason === 'time';
     if (timeUp) {
       play('tick'); setTimeout(() => play('gloom'), 250);
-      return show(`<div class="oc-band lose"></div><div class="oc-clock">${window.ICON ? ICON('alarm') : ''}</div><div class="oc-title">タイムアップ</div>`, 'oc oc-timeup', 1700);
+      return show(`<div class="oc-band lose"></div><div class="oc-clock">${window.ICON ? ICON('alarm') : ''}</div><div class="oc-title ink" data-text="タイムアップ">タイムアップ</div>`, 'oc oc-timeup', 1700);
     }
     if (won) {
       const clear = s.gameClear, joumu = s.stage === 'joumu';
       const stamp = clear ? 'GAME<br>CLEAR' : joumu ? '辞表' : esc(info.stampText || '承認');
       play('whoosh'); setTimeout(() => { play('thud'); duck(); }, 520); setTimeout(() => play('fanfare'), 700);
-      return show(`<div class="oc-band ${clear ? 'gold' : 'win'}"></div><div class="oc-title">${clear ? '社長就任！' : '説得成功！'}</div><div class="oc-sub">${clear ? '泥舟カンパニーの頂点へ' : s.free ? 'フリー対戦' : joumu ? '常務、辞任' : '昇進'}</div><div class="oc-stamp ${clear ? 'gold' : joumu ? 'st-jihyo' : ''}">${stamp}</div>`, 'oc ' + (clear ? 'oc-clear' : 'oc-win'), 2100);
+      return show(`<div class="oc-band ${clear ? 'gold' : 'win'}"></div><div class="oc-title ink" data-text="${clear ? '社長就任！' : '説得成功！'}">${clear ? '社長就任！' : '説得成功！'}</div><div class="oc-sub">${clear ? '泥舟カンパニーの頂点へ' : s.free ? 'フリー対戦' : joumu ? '常務、辞任' : '昇進'}</div><div class="oc-stamp ${clear ? 'gold' : joumu ? 'st-jihyo' : ''}">${stamp}</div>`, 'oc ' + (clear ? 'oc-clear' : 'oc-win'), 2100);
     }
     play('whoosh'); setTimeout(() => { play('thud'); duck(); }, 520); setTimeout(() => play('gloom'), 650);
-    return show(`<div class="oc-band lose"></div><div class="oc-title">交渉決裂</div><div class="oc-sub">${s.free ? 'フリー対戦' : '左遷'}</div><div class="oc-stamp lose">却下</div><div class="oc-snow"></div>`, 'oc oc-lose', 2000);
+    return show(`<div class="oc-band lose"></div><div class="oc-title ink" data-text="交渉決裂">交渉決裂</div><div class="oc-sub">${s.free ? 'フリー対戦' : '左遷'}</div><div class="oc-stamp lose">却下</div><div class="oc-snow"></div>`, 'oc oc-lose', 2000);
   }
 
   // 残り30秒: タイマーが赤く脈打ち、毎秒小さなチック音

@@ -1,18 +1,14 @@
 // ゲーム進行ロジック(状態はすべてコード側。LLMは台詞とdeltaの「提案」だけ)
 const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
 const { RANKS, STAGES, BY_RANK, JUMP, COMMON_INJECTION } = require('./ladder');
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
 
-// 役職トークン(HMAC署名)。"<役職index>.<署名>" 形式。秘密鍵は .secret(再起動しても有効)
-const SECRET_FILE = path.join(__dirname, '.secret');
-if (!fs.existsSync(SECRET_FILE)) fs.writeFileSync(SECRET_FILE, crypto.randomBytes(32).toString('hex'), { mode: 0o600 });
-const SECRET = fs.readFileSync(SECRET_FILE, 'utf8').trim();
-const sig = (r) => crypto.createHmac('sha256', SECRET).update('rank:' + r).digest('hex').slice(0, 24);
+// 役職トークン(HMAC署名)。"<役職index>.<署名>" 形式。秘密鍵は .secret / Worker版は RANK_SECRET(secret.js)
+const SECRET = require('./secret');
+const sig = (r) => crypto.createHmac('sha256', SECRET.get()).update('rank:' + r).digest('hex').slice(0, 24);
 const rankToken = (r) => `${r}.${sig(r)}`;
 function rankFromToken(tok) {
   if (typeof tok !== 'string') return 0;

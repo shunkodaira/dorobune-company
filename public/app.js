@@ -105,7 +105,7 @@ async function start(stageId) {
   stopRec();
   const q = new URLSearchParams(location.search).get('weakness'); // テスト用(サーバが ALLOW_FORCE_WEAKNESS のときのみ有効)
   const s = await post('/api/new', { stage: stageId, rankToken: getRankToken(), playerToken: getPlayer(), weakness: q || undefined });
-  if (s.error) { alert(s.error === 'locked' ? 'この相手にはまだ挑戦できません' : s.error); return loadLadder(); }
+  if (s.error) { alert(s.error === 'locked' ? 'この相手にはまだ挑戦できません' : s.message || s.error); return loadLadder(); }
   stageInfo = s.stageInfo; serverTts = !!s.tts; ttsRate = +s.ttsRate || 1;
   document.body.className = 'theme-' + stageInfo.theme + (stageInfo.showScene ? '' : ' no-scene');
   $('bg').style.backgroundImage = `url(img/${stageInfo.img.bg}.jpg)`;
@@ -302,7 +302,7 @@ async function sendText(text) {
   try {
     const s = await post('/api/turn', { id: state.id, text });
     if (s.error === 'game not found') { gameGone(); return; }
-    if (s.error && !s.history) { setNpc(BUSY_LINE(stageInfo.npcLabel), null, 0, 'think'); $('input').value = text; return; }
+    if (s.error && !s.history) { setNpc(s.message || BUSY_LINE(stageInfo.npcLabel), null, 0, 'think'); $('input').value = text; return; }
     if (s.error) { setPlayer(text + '\n(時間切れ:この発言は届かなかった)'); busy = false; onGameOverFromServer(s); return; }
     if (s.status === 'playing') deadline = Date.now() + s.timeLeft * 1000;
     setSteps(3);

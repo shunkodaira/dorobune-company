@@ -5,3 +5,5 @@ tts-cache/
 node_modules/
 *.log
 .DS_Store
+.wrangler/
+.dev.vars

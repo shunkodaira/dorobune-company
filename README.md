@@ -2,6 +2,8 @@
 
 # 泥舟カンパニー — 出世の階段をのぼれ —
 
+### ▶ 今すぐプレイ: **[https://dorobune-company.junxiaoping5.workers.dev](https://dorobune-company.junxiaoping5.workers.dev)**(Chrome / Safari、マイク推奨)
+
 > **一言で:** 一癖ある上司たちをLLMで演じ、あなたの“言葉”だけで説得して、一般社員から社長まで出世するブラウザゲーム。
 
 沈みかけの老舗商社「泥舟カンパニー」。経理の鉄壁係長、熱血ラグビー課長、頑固な部長、悪徳常務、豪快な専務、そして寡黙な社長――。
@@ -126,11 +128,28 @@ LLM_PROVIDER=mock node server.js
 | `PORT` | 既定 3456 |
 | `ALLOW_FORCE_WEAKNESS=1` / `TIME_LIMIT_SEC` | テスト用(弱点の固定 / 制限時間の上書き)。本番では付けない |
 
+### Cloudflare Workers で公開(公開版: https://dorobune-company.junxiaoping5.workers.dev)
+ローカルの Node 版(`server.js`)はそのまま。公開版は `worker/` + `wrangler.jsonc` で、ゲームロジック(`game.js` `llm.js` `fatal.js` `turn.js` `memory-core.js`)を共有します。
+- 静的ファイル: Workers Static Assets(`public/`)/ API: 同じルートを Worker で実装(`worker/index.js`)
+- 状態: 対戦ごとに Durable Object(`GameDO`、3時間で自動削除)、プレイヤーの記憶は `PlayerDO`、レート制限は `LimitDO`(いずれも SQLite バック)
+- ボス音声: `worker/tts.js`(Gemini → OpenAI のフォールバック、KV `TTS_CACHE` にキャッシュ)
+- 乱用対策(APIクレジット保護): IPごとに 新規対戦20回/時・発言15回/分・音声40回/分・ヒント10回/分、全体で 新規600/日・発言6000/日・音声6000/日。1発言400字・1戦40発言まで。役職トークンは HMAC 署名(Worker secret `RANK_SECRET`)
+```bash
+wrangler kv namespace create TTS_CACHE   # 出力された id を wrangler.jsonc に
+wrangler secret put RANK_SECRET          # ランダムな長い文字列
+wrangler secret put OPENAI_API_KEY
+wrangler secret put GEMINI_API_KEY       # 任意
+wrangler deploy
+```
+
 LLM呼び出しが失敗したターンは自動で mock にフォールバック、TTSが失敗したらブラウザの読み上げにフォールバックします。
 
 ## ファイル構成
 ```
 server.js    API(/api/ladder, new, turn, timeout, hint, tts, memory/reset, health)と静的配信
+turn.js      1ターンの処理(Node版/Worker版で共有)
+memory-core.js 記憶の署名・要約・注入テキスト(共有)  secret.js 署名鍵(.secret / RANK_SECRET)
+worker/      Cloudflare Worker 版(index.js: API+Durable Objects / tts.js)  wrangler.jsonc  Workers の設定
 fatal.js     致命的弱点(一発逆転)の定義・事前チェック・LLM判定
 game.js      ゲーム状態・クランプ・連投対策・スコア・署名トークン・ヒント回数
 llm.js       プロバイダ切替・プロンプト構築・出力検証/再生成・第一声・ヒント生成
