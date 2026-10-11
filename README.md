@@ -20,12 +20,6 @@
 - **ボスが“生きている”**: 再戦では「またお前か。前回は〜」と前回の作戦を覚えていて、同じ手は効きにくい。上位のボスは「係長を説き伏せたらしいな」と噂も知っている
 
 
-### 演出
-- ボスの台詞はタイプライター表示(約35字/秒。吹き出しクリック/Enterで全文)。声はすぐ再生
-- 対戦開始の「VS」カットイン、ゲージ+15以上で「効いている！」+黄フラッシュ+ズーム、−10以下で「逆効果！」+赤フラッシュ+画面揺れ
-- 勝敗カットイン: 説得成功(承認印 / 常務は辞表 / 社長はGAME CLEAR金)、交渉決裂(却下印・左遷)、タイムアップ(時計)。残り30秒でタイマーが赤く脈打ちチック音
-- 効果音はすべて Web Audio で合成(音源ファイルなし)。ON/OFF は「ボスの声」ボタンと共通。`prefers-reduced-motion` では揺れ・ズーム・スライドを抑える
-
 ### ロビーBGM
 - 出世の階段画面でだけBGMを流す(最初のクリック/キー操作のあとに再生、ループ)。左上の小さなカードの 🎵 でON/OFF(ブラウザに記憶)。対戦開始でフェードアウト→停止し、階段に戻ると再開する
 - 曲: **"Clash Defiant" Kevin MacLeod (incompetech.com)** — Licensed under Creative Commons: By Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/)。BGMカードにもクレジットを表示。詳細は [CREDITS.md](CREDITS.md)
@@ -62,7 +56,7 @@
 | 対戦の記憶と噂 | 対戦後にLLMが「要約・使った論点・暴言の有無」を短く記録(`data/memory.json`)。再戦では第一声から前回に触れ、同じ論点の繰り返しは効果半減を指示。下位ボスとの勝敗は上位ボスに噂として伝わる |
 | 会社ナレッジ | `lore.js`: 社史・社訓・組織図・派閥争い・最近の社内ニュース+ボスごとの人間関係や因縁。各ボスのプロンプトに注入し、同僚や社内事情に一貫して触れる |
 | ヒント生成 | 会話・ゲージ・弱点を渡して切り返し案を3つ生成。弱点名は書かせず、方向だけ示すよう制約 |
-| ボスの声 | `gpt-4o-mini-tts`(/v1/audio/speech)。ボスごとに voice と演技指示(`voices.js`)。テキスト表示の後にストリーム再生、同じ台詞はキャッシュ |
+| ボスの声 | Gemini TTS `gemini-3.8-flash-tts`(Interactions API)。ボスごとの prebuilt voice と演技指示(`voices.js`)。演技指示は `speech_metadata.style` に入れるので読み上げられず、表情(焦り・怒り等)に応じた一言も足す。PCM ストリームに純JSで WAV ヘッダを付けて届いた分から再生(Safari は完成した WAV)。429 等で失敗したら同じ声の `gemini-3.8-flash-lite-tts` → OpenAI `gpt-4o-mini-tts` に自動フォールバック。同じ台詞はキャッシュ |
 | 音声入力 | ブラウザの Web Speech API(ja-JP)。非対応ブラウザはテキスト入力 |
 | アート | 背景・立ち絵・顔アイコンは OpenAI 画像生成(gpt-image-1.5)で作ったオリジナル(フルカラーのアニメ調)。UIは黄×黒×白の劇画表紙風テーマ+筆文字ロゴ |
 | 表情差分 | 6人×6表情(余裕/企み/焦り/驚き/怒り/納得)。元絵を参照に画像編集API(gpt-image-1.5 edits, input_fidelity=high)で顔だけ描き替え、元絵に合成して同一人物を保つ。LLMが返す `expression` をコードが検証し、ゲージ変化と矛盾する時は既定値(大幅減→怒り、大幅増→驚き/焦り、勝利目前→納得/焦り)に置換。切替は約250msのクロスフェード、対戦開始時に全差分をプリロード(一覧: docs/expressions-contact.png) |
@@ -96,7 +90,8 @@ flowchart LR
   LORE --> LLM
   MEM --> LLM
   LLM -- "chat completions (JSON)" --> OAI1["OpenAI gpt-4.1-mini"]
-  AUD -- "/api/tts" --> TTS -- "audio/speech" --> OAI2["OpenAI gpt-4o-mini-tts"]
+  AUD -- "/api/tts" --> TTS -- "interactions (stream)" --> GEM["Gemini 3.8 Flash TTS"]
+  TTS -. "fallback" .-> OAI2["OpenAI gpt-4o-mini-tts"]
   MEM --- FILE[("data/memory.json")]
 ```
 
@@ -104,7 +99,7 @@ flowchart LR
 - サーバ: Node.js 18+(標準モジュールのみ、npm install 不要)
 - フロント: 素のHTML/CSS/JS(グラスモーフィズムUI、1280×800 / 1920×1080 で確認)
 - LLM: OpenAI `gpt-4.1-mini`(既定)。xAI / Anthropic / Gemini / CLI / オフラインの `mock` にも切替可
-- 音声: OpenAI `gpt-4o-mini-tts`(出力)、Web Speech API(入力、Chrome/Edge推奨)
+- 音声: Gemini `gemini-3.8-flash-tts`(出力。フォールバック: `gemini-3.8-flash-lite-tts` → OpenAI `gpt-4o-mini-tts`)、Web Speech API(入力、Chrome/Edge推奨)
 - アート: OpenAI 画像生成(gpt-image-1.5)によるオリジナルイラスト(表情差分は同モデルの画像編集)
 - タイトルロゴ: 制作者(Shun)提供の画像(public/img/logo.webp / logo.png、ファビコンも同ロゴの「泥舟」ブロック)
 - サブタイトル書体: Yuji Boku(SIL Open Font License 1.1、使用文字のみサブセット化して同梱 public/fonts/)
@@ -118,10 +113,12 @@ LLM_PROVIDER=mock node server.js
 ```
 | 環境変数 | 意味 |
 |---|---|
-| `OPENAI_API_KEY` | LLM・ヒント・記憶要約・TTS に使用 |
+| `OPENAI_API_KEY` | LLM・ヒント・記憶要約・TTS(フォールバック)に使用 |
+| `GEMINI_API_KEY` | ボスの声(Gemini TTS)。無ければ OpenAI TTS。※無料枠は1モデルあたり約3回/分・10回/日なので、実プレイには課金枠を推奨(上限に達すると自動で OpenAI に切替) |
+| `TTS_PROVIDER` / `GEMINI_TTS_MODEL` / `TTS_PLAYBACK_RATE` | `gemini`(既定・キーがあれば)/`openai` / Gemini モデル変更 / Gemini 音声の再生速度(既定1.1) |
 | `LLM_PROVIDER` | `openai` / `xai` / `anthropic` / `gemini` / `claude-cli` / `codex-cli` / `mock` / `auto`(既定) |
 | `OPENAI_MODEL` | 既定 `gpt-4.1-mini` |
-| `TTS=off` / `TTS_MODEL` | ボス音声の無効化 / モデル変更 |
+| `TTS=off` / `TTS_MODEL` | ボス音声の無効化 / OpenAI TTS のモデル変更 |
 | `PORT` | 既定 3456 |
 | `ALLOW_FORCE_WEAKNESS=1` / `TIME_LIMIT_SEC` | テスト用(弱点の固定 / 制限時間の上書き)。本番では付けない |
 
@@ -135,7 +132,7 @@ llm.js       プロバイダ切替・プロンプト構築・出力検証/再生
 ladder.js    出世の階段・難易度テーブル・テーマ色
 bosses.js    係長/課長/専務/社長の定義   stages.js  部長/常務の定義
 lore.js      泥舟カンパニーの社内知識     memory.js  対戦の記憶・噂(data/memory.json)
-tts.js       OpenAI TTS とキャッシュ(tts-cache/)   voices.js  ボスごとの声と演技指示
+tts.js       Gemini TTS(WAV化)/ OpenAI TTS の切替・フォールバック・キャッシュ(tts-cache/)   voices.js  ボスごとの声と演技指示
 public/      index.html / app.js / style.css / img/(背景・立ち絵・顔アイコン)
 docs/        スクリーンショット
 ```

@@ -118,7 +118,7 @@ const server = http.createServer(async (req, res) => {
       }
       games.set(g.id, g);
       if (games.size > 1000) games.delete(games.keys().next().value);
-      return send(res, 200, { ...G.publicState(g), stageInfo: G.stageInfo(stage, g), provider: resolveProvider(), tts: TTS.enabled() });
+      return send(res, 200, { ...G.publicState(g), stageInfo: G.stageInfo(stage, g), provider: resolveProvider(), tts: TTS.enabled(), ttsRate: TTS.playbackRate() });
     }
     if (req.method === 'POST' && url.pathname === '/api/turn') {
       const body = await readBody(req);
@@ -144,7 +144,7 @@ const server = http.createServer(async (req, res) => {
       const g = games.get(url.searchParams.get('id'));
       const h = g && g.history[Number(url.searchParams.get('i'))];
       if (!h || h.role !== 'npc') return send(res, 404, { error: 'line not found' });
-      return await TTS.streamSpeech(g.stage.id, h.text, res);
+      return await TTS.streamSpeech(g.stage.id, h.text, res, { expr: h.expr, stream: url.searchParams.get('s') === '1' });
     }
     if (req.method === 'POST' && url.pathname === '/api/hint') {
       // ヒント(1戦3回まで・1回ごとにスコア減点)。回数はサーバで管理
@@ -178,7 +178,7 @@ const server = http.createServer(async (req, res) => {
       if (C.BGM_YOUTUBE_ID) return send(res, 200, { type: 'youtube', id: C.BGM_YOUTUBE_ID, volume: C.BGM_VOLUME });
       return send(res, 200, { type: 'none' });
     }
-    if (req.method === 'GET' && url.pathname === '/api/health') return send(res, 200, { ok: true, provider: resolveProvider(), tts: TTS.enabled() ? TTS.MODEL : false });
+    if (req.method === 'GET' && url.pathname === '/api/health') return send(res, 200, { ok: true, provider: resolveProvider(), tts: TTS.enabled() ? TTS.MODEL : false, ttsProvider: TTS.enabled() ? TTS.PROVIDER() : null });
     const p = url.pathname === '/' ? '/index.html' : url.pathname;
     const fp = path.join(PUB, path.normalize(p).replace(/^(\.\.[\/\\])+/, ''));
     if (!fp.startsWith(PUB) || !fs.existsSync(fp) || fs.statSync(fp).isDirectory()) { res.writeHead(404); return res.end('not found'); }

@@ -15,11 +15,8 @@ https://creativecommons.org/licenses/by/4.0/
 ```
 - 加工: 冒頭3分20秒に切り出し、フェードイン/アウトと音量の正規化(loudnorm)を行い 128kbps MP3 に再エンコード(public/audio/bgm.mp3)。作者FAQにより切り出し・編集の明記は不要だが、念のため記載
 
-## 効果音 / Sound effects
-- 判子・カットイン・好反応/逆効果・残り時間のチック音などはすべて Web Audio API でその場で合成(public/fx.js)。外部音源は使っていないため、ライセンス表記は不要
-
 ## その他
 - タイトルロゴ: 制作者(Shun)提供
 - キャラクター・背景イラスト: OpenAI 画像生成(gpt-image-1.5)によるオリジナル
-- ボスの声: OpenAI gpt-4o-mini-tts
+- ボスの声: Google Gemini TTS(gemini-3.8-flash-tts / gemini-3.8-flash-lite-tts、prebuilt voices)。フォールバック: OpenAI gpt-4o-mini-tts
 - サブタイトル書体: Yuji Boku (SIL Open Font License 1.1)

@@ -105,7 +105,7 @@ async function start(stageId) {
   const q = new URLSearchParams(location.search).get('weakness'); // テスト用(サーバが ALLOW_FORCE_WEAKNESS のときのみ有効)
   const s = await post('/api/new', { stage: stageId, rankToken: getRankToken(), playerToken: getPlayer(), weakness: q || undefined });
   if (s.error) { alert(s.error === 'locked' ? 'この相手にはまだ挑戦できません' : s.error); return loadLadder(); }
-  stageInfo = s.stageInfo; serverTts = !!s.tts;
+  stageInfo = s.stageInfo; serverTts = !!s.tts; ttsRate = +s.ttsRate || 1;
   document.body.className = 'theme-' + stageInfo.theme + (stageInfo.showScene ? '' : ' no-scene');
   $('bg').style.backgroundImage = `url(img/${stageInfo.img.bg}.jpg)`;
   for (const id of ['sprite', 'sprite2']) $(id).classList.toggle('hidden', !stageInfo.img.sprite);
@@ -155,9 +155,11 @@ function setNpc(text) {
   $('npcText').classList.remove('thinking'); $('npcText').scrollTop = 0;
   if (window.FX) FX.type($('npcText'), text); else $('npcText').textContent = text;
 }
-// ───── ボスの声: サーバの OpenAI TTS(/api/tts, ストリーム再生)。失敗したらブラウザの speechSynthesis
+// ───── ボスの声: サーバの TTS(/api/tts。Gemini TTS、失敗時は OpenAI TTS)。失敗したらブラウザの speechSynthesis
 // 1つの <audio> を使い回す(最初のクリック/キーで「解錠」→ 以後は自動再生できる)。新しい台詞は前の台詞を止める
+const IS_SAFARI = /^((?!chrome|android|crios|fxios|edg).)*safari/i.test(navigator.userAgent);
 const voiceEl = new Audio(); voiceEl.preload = 'auto';
+let ttsRate = 1; // Gemini TTS は少しゆったりめなので再生速度を上げる(音程は保たれる)
 const SILENT = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
 let voiceSeq = 0, unlocked = false, pendingVoice = null, audioCtx = null;
 function unlockAudio() {
@@ -171,11 +173,12 @@ function speakLine(idx, text) {
   stopVoice();
   if (!tts || !text) return;
   if (!serverTts || !state) return say(text);
-  const seq = voiceSeq, url = `/api/tts?id=${encodeURIComponent(state.id)}&i=${idx}`;
+  // Safari は長さ不定のWAVストリームが苦手なので、完成したWAVを受け取る(s=0)。他のブラウザは届いた分から再生(s=1)
+  const seq = voiceSeq, url = `/api/tts?id=${encodeURIComponent(state.id)}&i=${idx}&s=${IS_SAFARI ? 0 : 1}`;
   let fell = false;
   const fallback = () => { if (fell || seq !== voiceSeq) return; fell = true; say(text); };
   voiceEl.onerror = () => { if (seq === voiceSeq && voiceEl.src.includes('/api/tts')) fallback(); };
-  voiceEl.src = url;
+  voiceEl.defaultPlaybackRate = ttsRate; voiceEl.src = url; voiceEl.playbackRate = ttsRate;
   voiceEl.play().catch((e) => {
     if (seq !== voiceSeq) return;
     if (e && e.name === 'NotAllowedError') { pendingVoice = { idx, text }; $('voicePrompt').classList.remove('hidden'); return; } // 自動再生ブロック → ワンタップで再生
