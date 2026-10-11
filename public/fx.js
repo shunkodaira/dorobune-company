@@ -32,7 +32,34 @@
     fanfare() { [523.3, 659.3, 784, 1046.5].forEach((f, i) => osc('triangle', f, 0, 0.5, 0.25, i * 0.09)); },
     gloom() { osc('sawtooth', 220, 110, 0.9, 0.12); osc('sine', 174.6, 87.3, 1.0, 0.25, 0.05); },
   };
-  const play = (name) => { if (soundOn()) try { SFX[name](); } catch {} };
+  const play = (name) => { window.__lastSfx = name; if (soundOn()) try { SFX[name](); } catch {} };
+
+  // ───── UIボタン音(イベント委譲。新しいボタンにも自動で付く)。音量は控えめ・pointerdown で即時
+  Object.assign(SFX, {
+    click() { osc('square', 2200, 1400, 0.025, 0.05); noise(0.012, 0.04, 'highpass', 4000); },                 // 通常ボタン
+    confirm() { osc('triangle', 1567.98, 0, 0.12, 0.16); osc('sine', 2093, 0, 0.22, 0.12, 0.04); noise(0.02, 0.07, 'highpass', 5000); }, // 挑戦する(カチン)
+    bonk() { osc('sine', 180, 90, 0.16, 0.22); },                                                                   // ロック中の段
+    hover() { osc('sine', 1800, 0, 0.018, 0.025); },                                                                // 段にマウスを乗せた時
+    micOn() { osc('sine', 660, 990, 0.09, 0.12); },
+    micOff() { osc('sine', 990, 550, 0.09, 0.1); },
+  });
+  const CONFIRM = '#chGo, #lostRetry, #retryBtn, [data-sfx=confirm]';
+  let lastUi = 0;
+  document.addEventListener('pointerdown', (e) => {
+    if (e.button > 0) return;
+    const t = e.target.closest('button, [role=button], .hb-item, .step'); if (!t) return;
+    if (t.disabled || t.matches('[aria-disabled=true]') || t.closest('.fx-layer')) return; // カットイン中は専用音のみ
+    const now = performance.now(); if (now - lastUi < 40) return; lastUi = now;
+    if (t.matches('.step')) return play(t.matches('.locked') ? 'bonk' : 'click');
+    if (t.id === 'micBtn') return play(typeof recOn !== 'undefined' && recOn ? 'micOff' : 'micOn');
+    if (t.dataset.sfx === 'none') return;
+    play(t.matches(CONFIRM) ? 'confirm' : 'click');
+  }, { capture: true });
+  let lastHover = null;
+  document.addEventListener('pointerover', (e) => {
+    const t = e.target.closest && e.target.closest('.step.open'); if (!t || t === lastHover) { if (!t) lastHover = null; return; }
+    lastHover = t; play('hover');
+  });
   // ボスの声を一瞬下げる(効果音が埋もれないように)
   function duck(ms = 700) { const v = typeof voiceEl !== 'undefined' ? voiceEl : null; if (!v) return; const before = v.volume; v.volume = Math.min(before, 0.45); setTimeout(() => { v.volume = 1; }, ms); }
 
