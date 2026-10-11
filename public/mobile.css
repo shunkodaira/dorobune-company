@@ -1,0 +1,272 @@
+/* 泥舟カンパニー — スマホ用レイアウト(PC/タブレットには適用しない: index.html の media 属性で読み込み) */
+/* ========== 縦向き(スマホ) ========== */
+@media (max-width:700px){
+  :root{--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);
+    --H:var(--app-h,100dvh);--top-h:calc(var(--st) + 62px);--art-h:calc((var(--H) - var(--top-h)) * .4);--dlg-top:calc(var(--top-h) + var(--art-h));--bottom-h:72px;--kb:0px;--m:8px}
+  html{font-size:15px}
+  html,body{height:var(--H);overscroll-behavior:none;-webkit-text-size-adjust:100%}
+  body{background:#07070a}
+  button{min-height:44px;touch-action:manipulation}
+  /* --- 上段: 目標+残り時間をコンパクトに --- */
+  body .title-panel{top:calc(var(--st) + 6px);left:calc(var(--sl) + 6px);right:calc(var(--sr) + 6px);width:auto;max-width:none;height:50px;padding:5px 10px;gap:8px;border-radius:.6rem;z-index:6}
+  body .title-panel .title{font-size:1.05rem;letter-spacing:0;flex:none}
+  body .title-panel .goal{flex:1;min-width:0;max-width:none;border-left:1px solid var(--border);padding-left:8px}
+  body .title-panel .goal .ptitle,body .title-panel .timer .ptitle{display:none}
+  body .title-panel #objective{font-size:12.5px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  body .title-panel .timer{flex:none;padding-left:8px}
+  body #timer{font-size:1.35rem}
+  /* --- ボスの絵: 上の専用エリア(顔と上半身が必ず見える) --- */
+  body #bg,body #bg2{top:var(--top-h);bottom:auto;left:0;right:0;height:var(--art-h);background-size:250% auto;background-position:78% 13%}
+  body.has-sprite #bg,body.has-sprite #bg2{background-size:cover;background-position:center 35%;filter:brightness(.75)}
+  body .sprite{top:calc(var(--top-h) + 4px);bottom:auto;right:auto;left:50%;height:calc(var(--art-h) * 1.75);max-height:none;width:auto;margin-left:calc(var(--art-h) * -.6);
+    -webkit-mask-image:linear-gradient(to bottom,#000 48%,transparent 57%);mask-image:linear-gradient(to bottom,#000 48%,transparent 57%)}
+  body:not(.no-scene) .sprite{right:auto}
+  body #vignette{background:linear-gradient(to bottom,rgba(0,0,0,.35),transparent calc(var(--top-h) + 30px),transparent calc(var(--dlg-top) - 70px),rgba(7,7,10,.92) var(--dlg-top),#07070a calc(var(--dlg-top) + 40px))}
+  /* --- 会話: ボスの絵の下に縦に積む。長い時はこの中でスクロール --- */
+  body .dialogue,body:not(.no-scene) .dialogue,body.no-scene .dialogue{position:fixed;top:calc(var(--dlg-top) + 30px);bottom:calc(var(--bottom-h) + var(--kb) + 6px);left:calc(var(--sl) + 10px);right:calc(var(--sr) + 10px);width:auto;
+    display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:14px;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:22px 2px 10px;z-index:2}
+  body .dialogue .player-line{align-self:flex-end;max-width:88%;font-size:14px;line-height:1.5;max-height:none;margin-right:6px;flex:none}
+  body .dialogue .player-line .pl-text{max-height:4.6em;overflow:auto}
+  body .bubble.bb{flex:none;width:auto;margin:0 4px 0 10px;padding:12px 12px 12px 14px;gap:8px;align-items:flex-start}
+  body .bubble.bb-angry,body .bubble.bb-shout{padding:20px 20px 16px 22px}
+  body .bubble #faceImg{display:none}
+  body .npc-name{font-size:13px;margin-bottom:2px}
+  body .npc-text{font-size:15.5px;line-height:1.6;max-height:none;overflow:visible}
+  body .bubble-tools{flex-direction:column;gap:6px}
+  body .bubble .icon-btn{width:44px;height:44px;min-height:44px}
+  body .lost-box button{min-height:44px}
+  /* --- ゲージ: ボスの絵の下端に細いバー --- */
+  body .bottom-row{position:fixed;left:0;right:0;bottom:var(--kb);transform:none;width:auto;display:block;padding:6px calc(var(--sr) + 8px) calc(var(--sb) + 6px) calc(var(--sl) + 8px);
+    background:linear-gradient(to bottom,rgba(10,10,12,.92),#0a0a0c);border-top:2px solid #ffd400;z-index:7}
+  body .bottom-row .gauge-panel,body .gauge-panel{position:fixed;top:calc(var(--dlg-top) - 6px);bottom:auto;left:calc(var(--sl) + 8px);right:calc(var(--sr) + 8px);width:auto;height:34px;transform:none;
+    display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto;align-items:center;gap:8px;padding:4px 10px;border-radius:.6rem;z-index:5}
+  body .gauge-panel .ptitle{margin:0;font-size:12.5px;white-space:nowrap;gap:4px}
+  body .gauge-panel #gaugeNum{font-size:1.1rem}
+  body .gauge-panel #face{width:22px;height:22px;font-size:1rem}
+  body .gauge-panel #face .ico{width:22px;height:22px}
+  body .gauge-panel .gauge{height:9px}
+  body .gauge-panel .delta,body .gauge-panel .delta.up,body .gauge-panel .delta.down{display:block;margin:0;min-height:0;font-size:11.5px;max-width:7.5em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* --- 入力バー: 画面下に固定(セーフエリア+キーボード対応) --- */
+  body .bottom-row .voice-panel,body .voice-panel{position:relative;width:auto;height:auto;transform:none;left:auto;bottom:auto;padding:0;border:0;background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;display:flex;align-items:center;gap:8px;border-radius:0}
+  body .voice-panel .vp-msg,body .voice-panel .wave,body .voice-panel .vp-label{display:none}
+  body .voice-panel .vp-row{flex:none;gap:0}
+  body .voice-panel .mic{width:50px;height:50px;font-size:1.2rem;box-shadow:0 0 0 3px #ffd400,0 0 12px var(--glow);border-width:2px}
+  body .voice-panel .text-form{flex:1;min-width:0;gap:6px;align-items:center}
+  body .text-form input{font-size:16px;height:44px;padding:0 10px;min-width:0}
+  body .text-form input::placeholder{font-size:13px}
+  body .text-form button{height:44px;padding:0 10px;font-size:14px;flex:none;white-space:nowrap}
+  body #hintBtn{padding:0 8px}
+  body.kb-open .voice-panel .vp-row{display:none}
+  /* キーボード表示中: 絵を畳んで会話を広く */
+  body.kb-open{--art-h:0px}
+  body.kb-open .gauge-panel{display:none}
+  body.kb-open .sprite{opacity:0}
+  body.kb-open .dialogue{top:calc(var(--top-h) + 4px)}
+  /* --- 気になるもの: 折りたたみ(絵の左上のボタン) --- */
+  body:not(.no-scene) .scene-panel{display:block!important;position:fixed;top:calc(var(--top-h) + 6px);left:calc(var(--sl) + 6px);right:auto;bottom:auto;width:auto;max-width:min(82vw,22rem);padding:0 10px;z-index:8;font-size:13px;border-radius:.6rem}
+  body .scene-panel .ptitle{min-height:44px;margin:0;cursor:pointer;font-size:13px;user-select:none}
+  body .scene-panel .ptitle::after{content:"▼";font-size:10px;margin-left:4px;opacity:.8}
+  body .scene-panel.open .ptitle::after{content:"▲"}
+  body .scene-panel:not(.open) .scene{display:none}
+  body .scene-panel.open{max-height:calc(var(--art-h) + 20px);overflow:auto;padding-bottom:8px}
+  body .scene-panel .scene li{font-size:13px;line-height:1.45}
+  body.kb-open .scene-panel{display:none!important}
+  /* --- ヒント --- */
+  body .hint-box{position:fixed;left:calc(var(--sl) + 8px);right:calc(var(--sr) + 8px);width:auto;bottom:calc(var(--bottom-h) + var(--kb) + 8px);top:auto;max-height:calc(var(--H) - var(--top-h) - var(--bottom-h) - var(--kb) - 24px);overflow:auto;z-index:9}
+  body .hint-box .hb-head small{display:none}
+  body .hb-item{min-height:44px;font-size:14px}
+  body #hintClose{width:44px;height:44px}
+  body .voice-prompt{bottom:calc(var(--bottom-h) + var(--kb) + 10px);font-size:14px;min-height:44px}
+  /* --- オーバーレイ共通 --- */
+  body .overlay{padding:calc(var(--st) + 8px) calc(var(--sr) + 8px) calc(var(--sb) + 8px) calc(var(--sl) + 8px);overflow-y:auto;-webkit-overflow-scrolling:touch}
+  body .log-box{width:100%;max-height:calc(var(--H) - var(--st) - var(--sb) - 24px);font-size:14px}
+  body #logClose{width:44px;height:44px}
+  /* --- 出世の階段(タイトル) --- */
+  body .ladder-overlay{align-items:flex-start;justify-content:center;padding-bottom:calc(var(--sb) + 76px)}
+  body .ladder-box{width:100%}
+  body .ladder-head{padding-top:0}
+  body .ladder-head .logo picture{display:inline-block;max-width:100%}
+  body .ladder-head .logo-img{height:auto;width:min(86vw,25rem);max-height:22vh}
+  body .ladder-head .select-rank{margin:0;font-size:14px}
+  body .ladder-head .select-rank b{font-size:1.1rem}
+  body .ladder{height:clamp(17rem,calc(var(--H) - 22vh - 13rem),27rem);min-height:0;max-height:none;padding:5.6rem 2px 0;gap:3px}
+  body .st-name{font-size:14px;letter-spacing:0;padding-bottom:6px;line-height:1.15}
+  body .step{height:max(var(--h),5.4rem);min-width:0}
+  body .st-top img,body .st-face{max-width:100%}
+  body .me .ico{width:2.4rem;height:2.4rem}
+  body .step.open.current .me{bottom:calc(100% + 5.6rem)}
+  body .ladder-foot{flex-direction:column;align-items:stretch;gap:10px;font-size:13px;line-height:1.5}
+  body .foot-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  body .foot-btns button{min-height:44px;font-size:13px;padding:6px}
+  body .provider{font-size:11px}
+  /* BGM: 画面下にコンパクトに固定 */
+  body .bgm-card{top:auto;left:calc(var(--sl) + 8px);right:calc(var(--sr) + 8px);bottom:calc(var(--sb) + 8px);width:auto;max-width:none;display:flex;align-items:center;gap:8px;padding:4px 8px}
+  body .bgm-card .bgm-head{margin:0;flex:none}
+  body .bgm-card .bgm-btn{min-width:44px;min-height:40px}
+  body .bgm-card .bgm-frame{width:96px;height:54px;flex:none}
+  body .bgm-card .bgm-frame iframe{width:96px;height:54px}
+  body .bgm-card .bgm-credit,body .bgm-card .bgm-note{flex:1;min-width:0;font-size:10.5px}
+  body #challenge:not(.hidden) ~ .bgm-card,body #result:not(.hidden) ~ .bgm-card{display:none}
+  /* --- 挑戦確認カード --- */
+  body .challenge-box{flex-direction:column;text-align:center;gap:12px;padding:16px;width:100%;max-width:26rem;margin:auto}
+  body #chFace{width:7.5rem;height:7.5rem}
+  body .ch-info{width:100%}
+  body .ch-goal{justify-content:center;text-align:left}
+  body .challenge-box .result-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  body .challenge-box .result-btns button{min-height:48px;font-size:15px;padding:8px}
+  /* --- 結果 --- */
+  body #result{align-items:flex-start}
+  body .result-box{flex-direction:column;gap:10px;width:100%;max-width:30rem;margin:auto;padding:14px 14px 16px;text-align:center;max-height:none;overflow:visible;font-size:14px}
+  body #visual{width:auto;max-width:100%}
+  body #visual img{max-height:26vh;width:auto;max-width:100%}
+  body .result-info{width:100%;min-width:0}
+  body .result-info h2{font-size:1.5rem;margin:.2rem 0}
+  body .rs-row{grid-template-columns:1.6rem 5.2rem 1fr 3.2rem;gap:6px}
+  body .rs-name,body .rs-lv{font-size:13px}
+  body .result-box .result-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  body .result-box .result-btns button{min-height:48px;font-size:15px}
+  body .clear-banner{font-size:1.4rem}
+  /* --- カットイン --- */
+  body .vs-mark{left:50%;top:44%;font-size:5.2rem}
+  body .vs-you{left:6%;top:22%;transform:none}
+  body .vs-boss{left:6%;right:6%;top:auto;bottom:14%;transform:none;gap:10px}
+  body .vs-boss img{width:6.5rem;height:6.5rem;border-width:4px}
+  body .vs-info{max-width:none;flex:1;min-width:0;padding:.5rem .7rem}
+  body .vs-name{font-size:1.5rem}
+  body .vs-goal{font-size:12.5px}
+  body .cr-burst{width:30rem;height:15rem}
+  body .cr-title,body .cr-title.ink{font-size:3.3rem}
+  body .cr-sub{font-size:1rem;white-space:normal;width:max-content;max-width:88vw;text-align:center}
+  body .cr-boss{font-size:1rem;width:90vw;text-align:center}
+  body .oc-title,body .oc-title.ink{font-size:3.6rem}
+  body .oc-sub{font-size:1.2rem;letter-spacing:.2em}
+  body .oc-stamp{width:6rem;height:6rem;font-size:1.7rem}
+  body .fx-pop{font-size:2.4rem}
+}
+/* ========== 横向き(スマホ) ========== */
+@media (max-height:500px) and (orientation:landscape){
+  :root{--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);
+    --H:var(--app-h,100dvh);--art-w:40vw;--bottom-h:64px;--kb:0px;--m:6px}
+  html{font-size:14px}
+  html,body{height:var(--H)}
+  body{background:#07070a}
+  button{min-height:40px;touch-action:manipulation}
+  body .title-panel{top:6px;left:calc(var(--sl) + 6px);right:calc(var(--art-w) + 6px);width:auto;max-width:none;height:46px;padding:4px 10px;gap:8px;border-radius:.6rem;z-index:6}
+  body .title-panel .title{font-size:1rem;flex:none}
+  body .title-panel .goal{flex:1;min-width:0;max-width:none}
+  body .title-panel .goal .ptitle,body .title-panel .timer .ptitle{display:none}
+  body .title-panel #objective{font-size:12px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  body .title-panel .timer{flex:none;padding-left:8px}
+  body #timer{font-size:1.25rem}
+  body #bg,body #bg2{left:auto;right:0;top:0;bottom:0;width:var(--art-w);background-size:auto 150%;background-position:72% 8%}
+  body.has-sprite #bg,body.has-sprite #bg2{background-size:cover;background-position:center;filter:brightness(.75)}
+  body .sprite,body:not(.no-scene) .sprite{top:4px;bottom:auto;left:auto;right:calc(var(--sr) + var(--art-w) / 2 - var(--H) * .55);height:calc(var(--H) * 1.6);max-height:none;
+    -webkit-mask-image:linear-gradient(to bottom,#000 52%,transparent 60%);mask-image:linear-gradient(to bottom,#000 52%,transparent 60%)}
+  body #vignette{background:linear-gradient(to right,#07070a calc(100% - var(--art-w) - 20px),transparent calc(100% - var(--art-w) + 30px))}
+  body .dialogue,body:not(.no-scene) .dialogue,body.no-scene .dialogue{position:fixed;top:58px;bottom:calc(var(--bottom-h) + var(--kb) + 4px);left:calc(var(--sl) + 8px);right:calc(var(--art-w) + 8px);width:auto;
+    flex-direction:column;align-items:stretch;gap:10px;overflow-y:auto;padding:6px 18px 6px 4px}
+  body .dialogue .player-line{align-self:flex-end;max-width:88%;font-size:13px;max-height:none;flex:none}
+  body .dialogue .player-line .pl-text{max-height:3.2em;overflow:auto}
+  body .bubble.bb{flex:none;width:auto;padding:10px 12px;gap:8px}
+  body .bubble.bb-angry,body .bubble.bb-shout{padding:16px 18px 12px}
+  body .bubble #faceImg{display:none}
+  body .npc-name{font-size:12.5px}
+  body .npc-text{font-size:14.5px;line-height:1.55;max-height:none;overflow:visible}
+  body .bubble .icon-btn{width:38px;height:38px;min-height:38px}
+  body .bottom-row{position:fixed;left:0;right:var(--art-w);bottom:var(--kb);transform:none;width:auto;display:block;padding:5px 8px calc(var(--sb) + 5px) calc(var(--sl) + 8px);background:#0a0a0c;border-top:2px solid #ffd400;z-index:7}
+  body .bottom-row .gauge-panel,body .gauge-panel{position:fixed;left:auto;right:calc(var(--sr) + 8px);width:calc(var(--art-w) - 16px);bottom:calc(var(--sb) + 8px);top:auto;height:34px;transform:none;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;padding:4px 10px;z-index:5}
+  body .gauge-panel .ptitle{margin:0;font-size:12px;white-space:nowrap}
+  body .gauge-panel #gaugeNum{font-size:1.05rem}
+  body .gauge-panel #face .ico{width:20px;height:20px}
+  body .gauge-panel .gauge{height:8px}
+  body .gauge-panel .delta{display:block;margin:0;min-height:0;font-size:11px;max-width:7em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  body .bottom-row .voice-panel,body .voice-panel{position:relative;width:auto;height:auto;transform:none;left:auto;bottom:auto;padding:0;border:0;background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;display:flex;align-items:center;gap:8px}
+  body .voice-panel .vp-msg,body .voice-panel .wave,body .voice-panel .vp-label{display:none}
+  body .voice-panel .mic{width:46px;height:46px;box-shadow:0 0 0 3px #ffd400;border-width:2px}
+  body .voice-panel .text-form{flex:1;min-width:0;gap:6px;align-items:center}
+  body .text-form input{font-size:16px;height:42px;padding:0 10px}
+  body .text-form input::placeholder{font-size:12.5px}
+  body .text-form button{height:42px;padding:0 10px;font-size:13.5px;white-space:nowrap}
+  body:not(.no-scene) .scene-panel{display:block!important;position:fixed;top:6px;right:calc(var(--sr) + 6px);left:auto;bottom:auto;width:auto;max-width:calc(var(--art-w) - 12px);padding:0 10px;z-index:8;font-size:12.5px}
+  body .scene-panel .ptitle{min-height:38px;margin:0;cursor:pointer;font-size:12.5px}
+  body .scene-panel .ptitle::after{content:"▼";font-size:10px;margin-left:4px}
+  body .scene-panel.open .ptitle::after{content:"▲"}
+  body .scene-panel:not(.open) .scene{display:none}
+  body .scene-panel.open{max-height:70vh;overflow:auto;padding-bottom:8px}
+  body .hint-box{position:fixed;left:calc(var(--sl) + 8px);right:calc(var(--art-w) + 8px);width:auto;bottom:calc(var(--bottom-h) + var(--kb) + 6px);top:auto;max-height:calc(var(--H) - var(--bottom-h) - var(--kb) - 16px);overflow:auto;z-index:9}
+  body .hint-box .hb-head small{display:none}
+  body .overlay{padding:8px calc(var(--sr) + 8px) 8px calc(var(--sl) + 8px);overflow-y:auto}
+  body .log-box{width:min(52rem,100%);max-height:calc(var(--H) - 20px)}
+  body .ladder-overlay{align-items:flex-start}
+  body .ladder-box{width:100%;display:grid;grid-template-columns:minmax(0,34%) 1fr;grid-template-areas:"head ladder" "foot foot" "prov prov";column-gap:12px;align-items:end}
+  body .ladder-head{grid-area:head;padding-top:0;align-self:center}
+  body .ladder-head .logo-img{height:auto;width:100%;max-height:48vh}
+  body .ladder{grid-area:ladder;height:calc(var(--H) - 7.5rem);min-height:0;max-height:none;padding-top:5rem}
+  body .ladder-foot{grid-area:foot;font-size:12px;margin-top:6px}
+  body .provider{grid-area:prov;font-size:11px}
+  body .st-name{font-size:13px;padding-bottom:4px}
+  body .step{height:max(var(--h),4.6rem)}
+  body .bgm-card{top:auto;bottom:6px;left:auto;right:calc(var(--sr) + 6px);width:auto;max-width:15rem;display:flex;align-items:center;gap:6px;padding:3px 6px}
+  body .bgm-card .bgm-head{margin:0}
+  body .bgm-card .bgm-frame{width:80px;height:45px}
+  body .bgm-card .bgm-frame iframe{width:80px;height:45px}
+  body .bgm-card .bgm-credit{font-size:10px}
+  body #challenge:not(.hidden) ~ .bgm-card,body #result:not(.hidden) ~ .bgm-card{display:none}
+  body .challenge-box{max-width:40rem;padding:12px 16px;margin:auto}
+  body #chFace{width:7rem;height:7rem}
+  body #result{align-items:flex-start}
+  body .result-box{gap:14px;max-width:46rem;padding:12px 16px;max-height:none;overflow:visible;margin:auto;font-size:13.5px}
+  body #visual{width:10rem}
+  body .vs-mark{font-size:5rem}
+  body .vs-boss img{width:6rem;height:6rem}
+  body .vs-name{font-size:1.5rem}
+  body .cr-title,body .cr-title.ink{font-size:4.2rem}
+  body .cr-burst{width:40rem;height:17rem}
+  body .oc-title,body .oc-title.ink{font-size:4.2rem}
+}
+/* 入力バー: マイク+入力欄+ヒント+送信を1行に(狭い画面ではヒントはアイコン+残り回数のみ) */
+@media (max-width:700px), (max-height:500px) and (orientation:landscape){
+  body .bottom-row .voice-panel,body .voice-panel{flex-direction:row;justify-content:flex-start}
+  body .voice-panel .text-form{display:flex;flex-wrap:nowrap;margin:0}
+  body .text-form input{flex:1 1 0;width:0;min-width:0}
+  body #hintBtn{font-size:0;gap:2px;display:inline-flex;align-items:center;min-width:44px;justify-content:center}
+  body #hintBtn .ico{width:18px;height:18px;font-size:16px;margin:0}
+  body #hintBtn b{font-size:12px}
+  body #sendBtn{min-width:52px}
+}
+@media (max-height:500px) and (orientation:landscape){
+  body .ladder-overlay{padding-bottom:58px}
+  body #result{align-items:flex-start}
+  body .result-box{flex-direction:row;align-items:flex-start;text-align:left}
+  body .result-box #visual{flex:none;width:9rem;position:static}
+}
+/* 結果(左遷)・VS: スマホでは重ねずに縦1列。背景が透けないよう不透明に */
+@media (max-width:700px), (max-height:500px) and (orientation:landscape){
+  body #result{background:rgba(0,0,0,.94);backdrop-filter:none;-webkit-backdrop-filter:none}
+  body .result-box{background:#0b0b0d}
+  body #visual .fail-stack{display:flex;flex-direction:column;align-items:center;gap:12px;position:static;min-height:0;width:100%}
+  body #visual .jirei-wrap.late{position:static;left:auto;right:auto;top:auto;bottom:auto;transform:rotate(-2deg);animation:jireiInM .7s 1.2s cubic-bezier(.3,1.4,.5,1) both;opacity:0}
+  body #visual .jirei-wrap.late .jirei,body #visual .jirei{width:min(17rem,82vw);font-size:14px;line-height:1.7;padding:12px 14px;animation:none}
+  body #visual .rejected{transform:rotate(-8deg) scale(.85);margin:4px auto 0}
+  body #visual .timeup img{width:9rem;height:9rem}
+  body #visual .stamp{width:9rem;height:9rem}
+  body .fx-layer.vs{background:rgba(0,0,0,.85)}
+}
+@keyframes jireiInM{from{opacity:0;transform:translateY(-40px) rotate(-12deg)}to{opacity:1;transform:rotate(-2deg)}}
+@media (max-width:700px){
+  body .fx-layer.vs .vs-band{height:15%}
+  body .fx-layer.vs .vs-band.b1{top:12%}
+  body .fx-layer.vs .vs-band.b2{bottom:9%}
+  body .fx-layer.vs .vs-you{top:16%;left:8%}
+  body .fx-layer.vs .vs-mark{top:47%;font-size:5.6rem}
+  body .fx-layer.vs .vs-boss{bottom:12%}
+  body .fx-layer.vs .vs-skip{bottom:calc(var(--sb) + 8px)}
+}
+@media (max-width:700px), (max-height:500px) and (orientation:landscape){
+  body #visual .rejected{white-space:nowrap;font-size:3.2rem;padding:0 14px;border-width:5px}
+}
+@media (max-height:500px) and (orientation:landscape){
+  body .result-box #visual{width:13.5rem}
+  body #visual .jirei-wrap.late .jirei,body #visual .jirei{width:13rem;font-size:12.5px;padding:10px 12px}
+  body .result-box .result-info{flex:1;min-width:0}
+}

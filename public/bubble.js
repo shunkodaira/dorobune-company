@@ -1,5 +1,5 @@
 // 泥舟カンパニー — 漫画の吹き出し(SVGで形を描く。枠線は形に沿う)
-// 形: normal(角丸+しっぽ) / calm(まるい・やわらか) / think(もくもく雲) / nervous(ふるえる波線) / angry(ギザギザ) / shout(爆発トゲ・黄色)
+// 形: normal(角丸+しっぽ) / calm(まるい・やわらか) / think(もくもく雲) / nervous(ふるえる波線) / angry(ギザギザ) / shout(爆発トゲ・暗赤地に黄色い太枠)
 (function () {
   const NS = 'http://www.w3.org/2000/svg';
   const PAD = 40; // SVG はボックスより PAD px 大きく描き、トゲ・しっぽをはみ出させる
@@ -79,6 +79,34 @@
     const by = PAD + t.at, x = PAD; // left
     return `M${x + inset} ${by - bw / 2}L${x + 2} ${by - bw / 2}L${x + t.dx} ${by + t.dy}L${x + 2} ${by + bw / 2}L${x + inset} ${by + bw / 2}Z`;
   }
+
+  // 色はスタイルシートの継承(テーマ/状態クラス)に頼らず、ここで直接(インライン・!important)指定する。
+  // 実機 Safari で役員フロアの叫び/怒り吹き出しが「暗赤の塗りに暗い文字」になった件の恒久対策。ギザギザ(怒り/叫び)は常に暗い塗り+明るい文字。
+  const BOSS = {
+    normal: { fill: '#121212', stroke: '#ffd400', text: '#f4f7ff', name: '#ffd400' },
+    calm: { fill: '#1d1806', stroke: '#ffd400', text: '#fff8e6', name: '#ffd400' },
+    think: { fill: '#161616', stroke: '#ffd400', text: '#f4f7ff', name: '#ffd400' },
+    nervous: { fill: '#0f1418', stroke: '#ffe866', text: '#f4f7ff', name: '#ffe866' },
+    angry: { fill: '#2a0606', stroke: '#ff4a3d', text: '#fff6d8', name: '#ffd400' },
+    shout: { fill: '#3a0408', stroke: '#ffd400', text: '#ffffff', name: '#ffd400' },
+  };
+  const CRIMSON_NORMAL = '#1a0709';
+  const PLAYER = { fill: '#fff', stroke: '#111', text: '#111', name: '#111' };
+  function palette(host, style) {
+    if (!host.classList.contains('bubble')) return Object.assign({}, PLAYER, style === 'think' ? { fill: '#f4f4f4' } : {});
+    const p = Object.assign({}, BOSS[style] || BOSS.normal);
+    if ((style === 'normal' || style === 'think') && document.body.classList.contains('theme-crimson')) p.fill = CRIMSON_NORMAL;
+    return p;
+  }
+  const imp = (e, k, v) => e && e.style.setProperty(k, v, 'important');
+  function paint(host, style) {
+    const p = palette(host, style);
+    host.querySelectorAll(':scope > svg.bb-svg .bb-body, :scope > svg.bb-svg .bb-tail-line, :scope > svg.bb-svg .bb-dot').forEach(e => { imp(e, 'fill', p.fill); imp(e, 'stroke', p.stroke); });
+    host.querySelectorAll(':scope > svg.bb-svg .bb-tail-fill').forEach(e => { imp(e, 'fill', p.fill); imp(e, 'stroke', 'none'); });
+    host.querySelectorAll('.npc-text, .pl-text').forEach(e => { imp(e, 'color', p.text); imp(e, '-webkit-text-fill-color', p.text); imp(e, 'opacity', '1'); imp(e, 'mix-blend-mode', 'normal'); imp(e, 'filter', 'none'); });
+    host.querySelectorAll('.npc-name').forEach(e => { imp(e, 'color', p.name); imp(e, '-webkit-text-fill-color', p.name); imp(e, 'opacity', '1'); });
+    host.style.setProperty('--bb-name', p.name);
+  }
   function el(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent && parent.appendChild(e); return e; }
 
   function draw(host) {
@@ -106,6 +134,7 @@
     // ポップのアンカー = しっぽの先
     const ax = tl.side === 'top' ? PAD + tl.at + tl.dx : PAD + tl.dx, ay = tl.side === 'top' ? PAD + tl.dy : PAD + tl.at + tl.dy;
     svg.style.transformOrigin = `${ax}px ${ay}px`;
+    paint(host, style);
   }
   const ro = 'ResizeObserver' in window ? new ResizeObserver(es => es.forEach(e => draw(e.target))) : null;
 
@@ -141,5 +170,5 @@
     if (/^[…\s]*…/.test(t) || (t.match(/…/g) || []).length >= 3) return 'think';
     return 'normal';
   }
-  window.Bubble = { set, redraw, pickBoss, pickPlayer, hash, STYLES };
+  window.Bubble = { set, redraw, pickBoss, pickPlayer, hash, STYLES, paint: (h) => h._bb && paint(h, h._bb.style) };
 })();

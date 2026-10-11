@@ -32,6 +32,44 @@
     fanfare() { [523.3, 659.3, 784, 1046.5].forEach((f, i) => osc('triangle', f, 0, 0.5, 0.25, i * 0.09)); },
     gloom() { osc('sawtooth', 220, 110, 0.9, 0.12); osc('sine', 174.6, 87.3, 1.0, 0.25, 0.05); },
   };
+
+  // ───── 会心の一撃の効果音(重ね合わせ): 上昇ウーシュ → 着弾(サブベース落下+鋭いクラック+金属の響き)→ 残響。
+  // どの AudioContext / OfflineAudioContext でも鳴らせる純関数(docs/sfx-critical.wav はこれをオフライン描画したもの)
+  const CRIT_HIT = 0.3; // ウーシュ開始から着弾までの秒数(カットインの着地と合わせる)
+  function critHit(c, dest, when = c.currentTime + 0.02, vol = 1) {
+    const t0 = when, hit = t0 + CRIT_HIT, sr = c.sampleRate;
+    const nb = (sec) => { const b = c.createBuffer(1, Math.max(1, sr * sec | 0), sr), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return b; };
+    // 出力段: コンプレッサーで音圧を上げつつクリップを防ぐ
+    const comp = c.createDynamicsCompressor(); comp.threshold.value = -14; comp.knee.value = 8; comp.ratio.value = 10; comp.attack.value = 0.002; comp.release.value = 0.22;
+    const out = c.createGain(); out.gain.value = 0.72 * vol; comp.connect(out); out.connect(dest);
+    const bus = c.createGain(); bus.connect(comp);
+    // 残響(生成したインパルス応答)+短いエコー
+    const rv = c.createConvolver(); { const len = sr * 1.3 | 0, ir = c.createBuffer(2, len, sr); for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.2); } rv.buffer = ir; }
+    const rvg = c.createGain(); rvg.gain.value = 0.42; rv.connect(rvg); rvg.connect(comp);
+    const dl = c.createDelay(1); dl.delayTime.value = 0.13; const fb = c.createGain(); fb.gain.value = 0.32; const dlp = c.createBiquadFilter(); dlp.type = 'lowpass'; dlp.frequency.value = 2400;
+    dl.connect(dlp); dlp.connect(fb); fb.connect(dl); const dlo = c.createGain(); dlo.gain.value = 0.35; dlp.connect(dlo); dlo.connect(comp);
+    const send = c.createGain(); send.connect(rv); send.connect(dl);
+    const g = (peak, t, a, dec, to = bus, curve = 'exp') => { const n = c.createGain(); n.gain.setValueAtTime(0.0001, t); if (curve === 'lin') n.gain.linearRampToValueAtTime(peak, t + a); else n.gain.exponentialRampToValueAtTime(peak, t + a); n.gain.exponentialRampToValueAtTime(0.0001, t + a + dec); n.connect(to); return n; };
+    const src = (buf, t, dur, node) => { const s = c.createBufferSource(); s.buffer = buf; s.connect(node); s.start(t); s.stop(t + dur); };
+    const osc = (type, f0, f1, t, dur, node, ramp = dur) => { const o = c.createOscillator(); o.type = type; o.frequency.setValueAtTime(f0, t); if (f1) o.frequency.exponentialRampToValueAtTime(f1, t + ramp); o.connect(node); o.start(t); o.stop(t + dur); };
+    // 1) 着弾前の上昇ウーシュ(帯域ノイズが高く・大きくなり、着弾の瞬間に途切れる)
+    { const f = c.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.4; f.frequency.setValueAtTime(350, t0); f.frequency.exponentialRampToValueAtTime(5200, hit);
+      const n = c.createGain(); n.gain.setValueAtTime(0.0001, t0); n.gain.exponentialRampToValueAtTime(0.55, hit - 0.01); n.gain.linearRampToValueAtTime(0.0001, hit + 0.01); f.connect(n); n.connect(bus); src(nb(CRIT_HIT + 0.05), t0, CRIT_HIT + 0.03, f);
+      const r = c.createGain(); r.gain.setValueAtTime(0.0001, t0); r.gain.exponentialRampToValueAtTime(0.1, hit - 0.01); r.gain.linearRampToValueAtTime(0.0001, hit + 0.01); r.connect(bus); osc('sawtooth', 180, 1400, t0, CRIT_HIT + 0.02, r, CRIT_HIT); }
+    // 2) サブベースのドーン(120→30Hz のピッチ落下)+胴鳴り
+    osc('sine', 120, 30, hit, 1.15, g(1.0, hit, 0.004, 1.05), 0.75);
+    osc('sine', 62, 26, hit, 0.9, g(0.55, hit, 0.006, 0.8), 0.6);
+    { const ws = c.createWaveShaper(), k = new Float32Array(1024); for (let i = 0; i < 1024; i++) { const x = i / 511.5 - 1; k[i] = Math.tanh(x * 3); } ws.curve = k; ws.connect(g(0.35, hit, 0.003, 0.35)); osc('triangle', 160, 40, hit, 0.4, ws, 0.25); }
+    // 3) 鋭いクラック(短い高域ノイズ)+斬撃(下降する帯域ノイズ)+アタックのクリック
+    { const f = c.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 1800; const n = g(0.95, hit, 0.001, 0.07); f.connect(n); n.connect(send); src(nb(0.12), hit, 0.1, f); }
+    { const f = c.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 2; f.frequency.setValueAtTime(7000, hit); f.frequency.exponentialRampToValueAtTime(1200, hit + 0.2); const n = g(0.5, hit + 0.005, 0.004, 0.2); f.connect(n); n.connect(send); src(nb(0.25), hit, 0.24, f); }
+    osc('square', 2400, 160, hit, 0.03, g(0.35, hit, 0.0008, 0.025), 0.025);
+    // 4) 金属のガキィン(非整数倍音の減衰)
+    [[587, 0.2, 1.0], [1381, 0.14, 0.85], [2107, 0.11, 0.7], [2903, 0.08, 0.55], [3917, 0.06, 0.4], [5227, 0.04, 0.3]].forEach(([f, p, d], i) => {
+      const n = g(p, hit + 0.003, 0.002, d); n.connect(send); osc(i % 2 ? 'sine' : 'triangle', f * 1.012, f, hit, d + 0.05, n, 0.08);
+    });
+    return hit + 1.25 - t0; // 全長(秒)
+  }
   const play = (name) => { window.__lastSfx = name; if (soundOn()) try { SFX[name](); } catch {} };
 
   // ───── UIボタン音(イベント委譲。新しいボタンにも自動で付く)。音量は控えめ・pointerdown で即時
@@ -122,9 +160,13 @@
 
   // 会心の一撃(致命的弱点を突いた): 集中線 + 白フラッシュ + 大見出し
   function critical(info, label) {
-    play('whoosh'); setTimeout(() => { play('thud'); duck(1800); }, 180); setTimeout(() => play('chime'), 420); setTimeout(() => play('fanfare'), 900);
-    flashOnce('good');
-    if (!RM) { document.body.classList.remove('fx-shake'); void document.body.offsetWidth; document.body.classList.add('fx-shake'); setTimeout(() => document.body.classList.remove('fx-shake'), 500); }
+    window.__lastSfx = 'critical';
+    if (soundOn()) { const c = ac(); if (c) try { critHit(c, c.destination, c.currentTime + 0.02, 1); } catch {} }
+    duck(2000);
+    setTimeout(() => { // 着弾の瞬間: 白フラッシュ+強い揺れ
+      flashOnce('crit');
+      if (!RM) { document.body.classList.remove('fx-shake-big'); void document.body.offsetWidth; document.body.classList.add('fx-shake-big'); setTimeout(() => document.body.classList.remove('fx-shake-big'), 650); }
+    }, CRIT_HIT * 1000 + 20);
     return show(`<div class="cr-lines"></div><div class="cr-burst"></div><div class="cr-title ink" data-text="会心の一撃！">会心の一撃！</div><div class="cr-sub">${esc(label || '')}</div><div class="cr-boss">${esc(info.charName)}の心を撃ち抜いた！</div><div class="vs-skip">クリックでスキップ</div>`, 'cr', 2300);
   }
 
@@ -154,5 +196,5 @@
     if (danger && left !== lastTick) { lastTick = left; play('tick'); }
   }
 
-  window.FX = { ac, critical, type, skipType, vs, big, outcome, timerWarn, play, RM };
+  window.FX = { ac, critical, critHit, CRIT_HIT, type, skipType, vs, big, outcome, timerWarn, play, RM };
 })();
