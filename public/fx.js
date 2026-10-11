@@ -125,7 +125,7 @@
     const won = s.status === 'won', timeUp = s.loseReason === 'time';
     if (timeUp) {
       play('tick'); setTimeout(() => play('gloom'), 250);
-      return show(`<div class="oc-band lose"></div><div class="oc-clock">⏰</div><div class="oc-title">タイムアップ</div>`, 'oc oc-timeup', 1700);
+      return show(`<div class="oc-band lose"></div><div class="oc-clock">${window.ICON ? ICON('alarm') : ''}</div><div class="oc-title">タイムアップ</div>`, 'oc oc-timeup', 1700);
     }
     if (won) {
       const clear = s.gameClear, joumu = s.stage === 'joumu';

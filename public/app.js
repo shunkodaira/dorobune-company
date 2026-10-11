@@ -49,7 +49,7 @@ function openChallenge(step) {
   $('chBadge').className = 'ch-badge ' + (b.jump ? 'jump' : '');
   $('chName').textContent = b.charName; $('chSub').textContent = b.charSub;
   $('chGoal').textContent = b.goal;
-  $('chMeta').textContent = `⏱ 制限時間 ${Math.round(b.timeLimitSec / 60)}分 / 勝てば「${step.name}」に昇進、負ければ1段降格`;
+  $('chMeta').innerHTML = ICON('timer') + esc(`制限時間 ${Math.round(b.timeLimitSec / 60)}分 / 勝てば「${step.name}」に昇進、負ければ1段降格`);
   document.querySelector('.challenge-box').dataset.theme = b.theme;
   $('challenge').classList.remove('hidden');
 }
@@ -214,7 +214,7 @@ function render(s, last) {
   const lastNpc = [...s.history].reverse().find(h => h.role === 'npc'); if (lastNpc) setExpr(lastNpc.expr);
   $('gaugeNum').textContent = s.gauge; $('gaugeBar').style.width = s.gauge + '%';
   $('gaugeBar').style.backgroundPosition = `${-s.gauge * 2}px 0`;
-  let f = stageInfo.faces[0][1]; for (const [m, e] of stageInfo.faces) if (s.gauge >= m) f = e; $('face').textContent = f;
+  let f = stageInfo.faces[0][1]; for (const [m, e] of stageInfo.faces) if (s.gauge >= m) f = e; $('face').innerHTML = ICON.face(f);
   if (last) {
     const d = $('delta'); d.className = 'delta ' + (last.delta > 0 ? 'up' : last.delta < 0 ? 'down' : '');
     d.textContent = `${last.delta > 0 ? '▲ +' : last.delta < 0 ? '▼ ' : '± '}${last.delta}　${last.reason || ''}`;
@@ -234,7 +234,7 @@ function render(s, last) {
 function setSteps(n) {
   if (recOn && n !== 2) return;
   const npc = stageInfo ? stageInfo.npcLabel : '上司';
-  $('vpMsg').textContent = ['話したいことを、マイクに向かって話してください', '🎙️ 話す → AIが内容を解析 → ' + npc + 'が応答', '⏳ AIが内容を解析中…', '💬 ' + npc + 'が応答しました'][n];
+  $('vpMsg').innerHTML = ['話したいことを、マイクに向かって話してください', ICON('mic') + '話す → AIが内容を解析 → ' + esc(npc) + 'が応答', ICON('hourglass') + 'AIが内容を解析中…', ICON('balloon') + esc(npc) + 'が応答しました'][n];
   $('vpMsg').classList.toggle('active', n > 0);
 }
 let hintTimer = null;
@@ -309,12 +309,12 @@ function showResult(s) {
     ? (s.gameClear ? '泥舟カンパニーの頂点に立った！ あなたが新しい社長だ！' : `${stageInfo.charName}を説得した！${s.jump ? '(飛び級成功！)' : ''}`)
     : timeUp ? `時間切れ。${stageInfo.npcLabel}は次の予定へ去っていった…そして届いた左遷の辞令。`
     : `${stageInfo.npcLabel}との交渉は決裂。あなたは左遷されてしまった…`;
-  $('score').innerHTML = (won ? `SCORE ${s.score} 点${s.jump ? ' <small>(飛び級×1.5)</small>' : ''}${s.hintsUsed ? ` <small>(ヒント${s.hintsUsed}回 −${s.hintsUsed * 150})</small>` : ''}` : 'SCORE 0 点') + `<span class="time-used">⏱ 使用時間 ${mmss(s.timeUsed)}${won ? '(残り ' + mmss(s.timeLeft) + ' × 2点ボーナス)' : ''}</span>`;
+  $('score').innerHTML = (won ? `SCORE ${s.score} 点${s.jump ? ' <small>(飛び級×1.5)</small>' : ''}${s.hintsUsed ? ` <small>(ヒント${s.hintsUsed}回 −${s.hintsUsed * 150})</small>` : ''}` : 'SCORE 0 点') + `<span class="time-used">${ICON('timer')}使用時間 ${mmss(s.timeUsed)}${won ? '(残り ' + mmss(s.timeLeft) + ' × 2点ボーナス)' : ''}</span>`;
   const rc = $('rankChange');
   rc.className = 'rank-change ' + (won ? 'promo' : 'demo');
   rc.innerHTML = won
-    ? `<div class="rc-head">🎉 発令</div><div class="rc-row"><span class="rc-before">${esc(s.rankBefore)}</span><span class="rc-arrow">➜</span><span class="rc-after">${esc(s.rankAfter)}</span></div><div class="rc-note">${s.gameClear ? '本日付をもって <b>代表取締役社長</b> に任ずる' : `本日付をもって <b>${esc(s.rankAfter)}</b> に任ずる`} <span class="seal">印</span></div>`
-    : `<div class="rc-head">📉 左遷${s.rankAfter !== s.rankBefore ? '・降格' : ''}</div><div class="rc-row"><span class="rc-same">${esc(s.rankBefore)}</span><span class="rc-arrow">➜</span><span class="rc-exile">${esc(s.rankAfter)}(${esc(s.exile.replace(/\(.*\)$/, ''))})</span></div>`;
+    ? `<div class="rc-head">${ICON('cracker')}発令</div><div class="rc-row"><span class="rc-before">${esc(s.rankBefore)}</span><span class="rc-arrow">➜</span><span class="rc-after">${esc(s.rankAfter)}</span></div><div class="rc-note">${s.gameClear ? '本日付をもって <b>代表取締役社長</b> に任ずる' : `本日付をもって <b>${esc(s.rankAfter)}</b> に任ずる`} <span class="seal">印</span></div>`
+    : `<div class="rc-head">${ICON('chartDown')}左遷${s.rankAfter !== s.rankBefore ? '・降格' : ''}</div><div class="rc-row"><span class="rc-same">${esc(s.rankBefore)}</span><span class="rc-arrow">➜</span><span class="rc-exile">${esc(s.rankAfter)}(${esc(s.exile.replace(/\(.*\)$/, ''))})</span></div>`;
   $('reveal').textContent = `${stageInfo.npcLabel}の弱点は「${s.weakness}」だった`;
   // もう一回: 新しい役職からまだ挑戦できる相手なら表示
   $('retryBtn').classList.add('hidden');
@@ -322,14 +322,14 @@ function showResult(s) {
   renderResultStats(s.skills);
   $('result').classList.remove('hidden');
 }
-const STAT_NAMES = { logic: ['論理力', '🧑‍💼'], empathy: ['共感力', '🤝'], presentation: ['プレゼン力', '💬'], trust: ['信頼度', '⭐'] };
+const STAT_NAMES = { logic: ['論理力', 'tie'], empathy: ['共感力', 'heart'], presentation: ['プレゼン力', 'balloon'], trust: ['信頼度', 'star'] };
 function renderResultStats(skills) {
   const box = $('resultStats'); box.innerHTML = '<div class="rs-title">あなたのステータス</div>';
   const ks = Object.keys(STAT_NAMES);
   ks.forEach((k, i) => {
     const v = skills?.[k] || { lv: 1, pct: 0 };
     const row = document.createElement('div'); row.className = 'rs-row ' + k; row.style.animationDelay = (0.3 + i * 0.25) + 's';
-    row.innerHTML = `<span class="rs-icon">${STAT_NAMES[k][1]}</span><span class="rs-name">${STAT_NAMES[k][0]}</span><div class="rs-bar"><i></i></div><span class="rs-lv">Lv.<b>1</b></span>`;
+    row.innerHTML = `<span class="rs-icon">${ICON(STAT_NAMES[k][1])}</span><span class="rs-name">${STAT_NAMES[k][0]}</span><div class="rs-bar"><i></i></div><span class="rs-lv">Lv.<b>1</b></span>`;
     box.appendChild(row);
     setTimeout(() => {
       row.querySelector('i').style.width = v.pct + '%';
@@ -378,7 +378,7 @@ $('micBtn').onclick = () => recOn ? stopRec() : startRec();
 // ───── その他UI
 $('form').addEventListener('submit', (e) => { e.preventDefault(); sendText($('input').value); });
 $('input').addEventListener('input', () => { if (!recOn) setSteps($('input').value ? 1 : 0); });
-function ttsUI() { $('ttsBtn').classList.toggle('on', tts); $('ttsBtn').textContent = tts ? '🔊' : '🔇'; $('ttsBtn').title = tts ? 'ボスの声・効果音:ON(クリックでミュート)' : 'ボスの声・効果音:OFF(クリックでON)'; }
+function ttsUI() { $('ttsBtn').classList.toggle('on', tts); $('ttsBtn').innerHTML = ICON(tts ? 'speaker' : 'mute'); $('ttsBtn').title = tts ? 'ボスの声・効果音:ON(クリックでミュート)' : 'ボスの声・効果音:OFF(クリックでON)'; $('ttsBtn').setAttribute('aria-label', $('ttsBtn').title); }
 ttsUI();
 $('ttsBtn').onclick = () => {
   tts = !tts; localStorage.setItem(VOICE_KEY, tts ? 'on' : 'off'); ttsUI();

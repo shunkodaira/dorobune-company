@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>泥舟カンパニー</title>
-<link rel="icon" type="image/png" href="img/favicon.png?v=20261011n">
-<link rel="apple-touch-icon" href="img/apple-touch-icon.png?v=20261011n">
-<link rel="stylesheet" href="style.css?v=20261011n">
+<link rel="icon" type="image/png" href="img/favicon.png?v=20261011o">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png?v=20261011o">
+<link rel="stylesheet" href="style.css?v=20261011o">
 </head>
 <body class="theme-cyan">
 <div id="bg"></div>
@@ -18,8 +18,8 @@
 <!-- 上段 -->
 <div class="panel title-panel">
   <div class="title" id="titleMain">STAGE 1</div>
-  <div class="goal"><div class="ptitle">◎ 目標</div><div id="objective">AI導入の企画書を承認してもらう</div></div>
-  <div class="timer"><div class="ptitle">⏱ 残り時間</div><div id="timer">15:00</div></div>
+  <div class="goal"><div class="ptitle" data-icon="target">目標</div><div id="objective">AI導入の企画書を承認してもらう</div></div>
+  <div class="timer"><div class="ptitle" data-icon="timer">残り時間</div><div id="timer">15:00</div></div>
 </div>
 
 <!-- 中央: 会話 -->
@@ -33,20 +33,20 @@
       <div id="lostBox" class="lost-box hidden"><button id="lostRetry" type="button">もう一度挑戦する</button><button id="lostLadder" type="button" class="ghost">階段に戻る</button></div>
     </div>
     <div class="bubble-tools">
-      <button id="ttsBtn" class="icon-btn" title="上司の声(読み上げ)">🔈</button>
-      <button id="logBtn" class="icon-btn" title="会話ログ">📜</button>
+      <button id="ttsBtn" class="icon-btn" title="上司の声(読み上げ)" aria-label="上司の声(読み上げ)"></button>
+      <button id="logBtn" class="icon-btn" title="会話ログ" aria-label="会話ログ" data-icon="scroll"></button>
     </div>
   </div>
 </div>
 
 <!-- 下段 -->
 <div class="panel scene-panel">
-  <div class="ptitle">👀 気になるもの</div>
+  <div class="ptitle" data-icon="eyes">気になるもの</div>
   <ul id="scene" class="scene"></ul>
 </div>
 
-<div class="hint-box hidden" id="hintBox"><div class="hb-head">💡 切り返しのヒント <small>(クリックで入力欄へ。編集してから送信できます)</small><button type="button" id="hintClose" class="icon-btn">✕</button></div><div id="hintList"></div></div>
-<button id="voicePrompt" class="voice-prompt hidden" type="button">🔊 クリックで音声ON</button>
+<div class="hint-box hidden" id="hintBox"><div class="hb-head" data-icon="bulb">切り返しのヒント <small>(クリックで入力欄へ。編集してから送信できます)</small><button type="button" id="hintClose" class="icon-btn" title="閉じる" aria-label="閉じる" data-icon="close"></button></div><div id="hintList"></div></div>
+<button id="voicePrompt" class="voice-prompt hidden" type="button" data-icon="speaker">クリックで音声ON</button>
 <div class="bottom-row">
 <div class="panel voice-panel">
   <div class="vp-msg" id="vpMsg">話したいことを、マイクに向かって話してください</div>
@@ -68,12 +68,12 @@
   <div class="vp-label" id="micLabel">音声で送信</div>
   <form id="form" class="text-form">
     <input id="input" maxlength="400" autocomplete="off" placeholder="キーボードで入力もできます(Enterで送信)">
-    <button id="hintBtn" type="button" class="hint-btn" title="上司への切り返し案を出す(1戦3回まで・1回ごとにスコア-150)">💡ヒント<b id="hintLeft">3</b></button>
+    <button id="hintBtn" type="button" class="hint-btn" title="上司への切り返し案を出す(1戦3回まで・1回ごとにスコア-150)" data-icon="bulb">ヒント<b id="hintLeft">3</b></button>
     <button id="sendBtn">送信</button>
   </form>
 </div>
 <div class="panel gauge-panel">
-    <div class="ptitle"><span id="gaugeLabel">機嫌ゲージ</span> <b id="gaugeNum">20</b>/100 <span id="face">😠</span></div>
+    <div class="ptitle"><span id="gaugeLabel">機嫌ゲージ</span> <b id="gaugeNum">20</b>/100 <span id="face"></span></div>
     <div class="gauge"><div id="gaugeBar"></div></div>
     <div id="delta" class="delta"></div>
   </div>
@@ -84,7 +84,7 @@
 <div id="select" class="overlay ladder-overlay">
   <div class="ladder-box">
     <div class="ladder-head">
-      <h1 class="logo"><picture><source srcset="img/logo.webp?v=20261011n" type="image/webp"><img class="logo-img" src="img/logo.png?v=20261011n" alt="泥舟カンパニー" width="900" height="489"></picture></h1>
+      <h1 class="logo"><picture><source srcset="img/logo.webp?v=20261011o" type="image/webp"><img class="logo-img" src="img/logo.png?v=20261011o" alt="泥舟カンパニー" width="900" height="489"></picture></h1>
       <div class="select-rank">現在の役職:<b id="selectRank">一般社員</b></div>
     </div>
     <div class="ladder" id="ladder"></div>
@@ -101,7 +101,7 @@
       <div class="ch-badge" id="chBadge"></div>
       <div class="ch-name" id="chName"></div>
       <div class="ch-sub" id="chSub"></div>
-      <div class="ch-goal">◎ <span id="chGoal"></span></div>
+      <div class="ch-goal" data-icon="target"><span id="chGoal"></span></div>
       <div class="ch-meta" id="chMeta"></div>
       <div class="result-btns"><button id="chGo">挑戦する ▶</button><button id="chBack" class="ghost">やめておく</button></div>
     </div>
@@ -110,13 +110,13 @@
 
 <!-- ログ -->
 <div id="logOverlay" class="overlay hidden">
-  <div class="panel log-box"><div class="ptitle">会話ログ <button id="logClose" class="icon-btn">✕</button></div><div id="log"></div></div>
+  <div class="panel log-box"><div class="ptitle">会話ログ <button id="logClose" class="icon-btn" title="閉じる" aria-label="閉じる" data-icon="close"></button></div><div id="log"></div></div>
 </div>
 
 <!-- 結果 -->
 <div id="result" class="overlay hidden">
   <div class="result-box">
-    <div class="clear-banner hidden" id="clearBanner">🏆 GAME CLEAR 🏆</div>
+    <div class="clear-banner hidden" id="clearBanner"><span class="cb-ico" data-icon="trophy"></span>GAME CLEAR<span class="cb-ico" data-icon="trophy"></span></div>
     <div id="visual"></div>
     <div class="result-info">
     <h2 id="resultTitle"></h2>
@@ -139,9 +139,10 @@
   <div id="bgmNote" class="bgm-note hidden"></div>
   <div id="bgmCredit" class="bgm-credit hidden"></div>
 </div>
-<script src="fx.js?v=20261011n"></script>
-<script src="bubble.js?v=20261011n"></script>
-<script src="bgm.js?v=20261011n"></script>
-<script src="app.js?v=20261011n"></script>
+<script src="fx.js?v=20261011o"></script>
+<script src="icons.js?v=20261011o"></script>
+<script src="bubble.js?v=20261011o"></script>
+<script src="bgm.js?v=20261011o"></script>
+<script src="app.js?v=20261011o"></script>
 </body>
 </html>
