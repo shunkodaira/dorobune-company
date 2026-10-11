@@ -406,3 +406,70 @@ button.ghost{background:#111;color:#ffd400;border:2px solid #ffd400;box-shadow:n
 .bgm-credit a{color:#ffd400}
 .bgm-credit.hidden{display:none}
 .bgm-card.file{max-width:240px}
+
+/* ===== 演出 (fx.js) ===== */
+.fx-layer{position:fixed;inset:0;z-index:60;pointer-events:none;display:none;overflow:hidden}
+.fx-layer.on{display:block;pointer-events:auto;cursor:pointer}
+.fx-layer.out{opacity:0;transition:opacity .2s}
+/* VS カットイン */
+.fx-layer.vs{background:rgba(0,0,0,.72)}
+.vs-band{position:absolute;left:-10%;width:120%;height:22%;background:repeating-linear-gradient(-45deg,#ffd400 0 28px,#111 28px 40px);transform:rotate(-8deg);box-shadow:0 0 0 6px #111}
+.vs-band.b1{top:18%;animation:vsL .35s cubic-bezier(.2,.9,.3,1) both}
+.vs-band.b2{bottom:16%;animation:vsR .35s .05s cubic-bezier(.2,.9,.3,1) both}
+.vs-mark{position:absolute;left:36%;top:50%;transform:translate(-50%,-50%) rotate(-8deg);font:900 9rem/1 "DoroBrush",serif;color:#ffd400;-webkit-text-stroke:4px #111;paint-order:stroke fill;text-shadow:8px 8px 0 #000;animation:vsPop .45s .15s cubic-bezier(.2,1.6,.4,1) both}
+.vs-boss{position:absolute;left:47%;right:auto;top:50%;display:flex;align-items:center;gap:1.2rem;transform:translateY(-50%);animation:vsR .45s .1s cubic-bezier(.2,.9,.3,1) both}
+.vs-boss img{width:10rem;height:10rem;object-fit:cover;border:6px solid #ffd400;box-shadow:8px 8px 0 #000;background:#111}
+.vs-info{background:#111;border-left:8px solid #ffd400;padding:.8rem 1.2rem;max-width:20rem;box-shadow:6px 6px 0 #000}
+.vs-rank{color:#ffd400;font-weight:900;font-size:1.1rem;letter-spacing:.15em}
+.vs-name{color:#fff;font-weight:900;font-size:2.2rem}
+.vs-goal{color:#ddd;font-size:1rem;margin-top:.3rem}
+.vs-you{position:absolute;left:5%;top:50%;transform:translateY(-50%);background:#ffd400;color:#111;padding:.8rem 1.6rem;box-shadow:6px 6px 0 #000;animation:vsL .45s .1s cubic-bezier(.2,.9,.3,1) both}
+.vs-you .vs-rank{color:#111}.vs-you .vs-name{color:#111}
+.vs-skip{position:absolute;bottom:1rem;right:1.2rem;color:#aaa;font-size:.85rem}
+@keyframes vsL{from{transform:translateX(-120%) rotate(-8deg)}}
+@keyframes vsR{from{transform:translateX(120%) rotate(-8deg)}}
+.vs-you{--r:0}.vs-boss{--r:0}
+@keyframes vsPop{from{transform:translate(-50%,-50%) rotate(-8deg) scale(3);opacity:0}}
+/* フラッシュ・ポップ・ズーム・揺れ */
+.fx-flash{position:fixed;inset:0;z-index:55;pointer-events:none;opacity:0}
+.fx-flash.on.good{background:radial-gradient(circle,rgba(255,212,0,.55),rgba(255,212,0,.15));animation:flash .5s ease-out both}
+.fx-flash.on.bad{background:radial-gradient(circle,rgba(230,30,40,.55),rgba(120,0,0,.3));animation:flash .55s ease-out both}
+@keyframes flash{0%{opacity:1}100%{opacity:0}}
+.fx-pop{position:fixed;left:50%;top:34%;z-index:58;pointer-events:none;font:900 4.2rem/1 "DoroBrush",serif;letter-spacing:.05em;transform:translate(-50%,-50%) rotate(-6deg);paint-order:stroke fill;-webkit-text-stroke:5px #111;text-shadow:6px 6px 0 #000;animation:popIn 1.3s cubic-bezier(.2,1.5,.4,1) both;white-space:nowrap}
+.fx-pop.good{color:#ffd400}.fx-pop.bad{color:#ff3b4a}
+@keyframes popIn{0%{transform:translate(-50%,-50%) rotate(-6deg) scale(2.4);opacity:0}15%{transform:translate(-50%,-50%) rotate(-6deg) scale(1);opacity:1}80%{opacity:1}100%{transform:translate(-50%,-60%) rotate(-6deg) scale(1);opacity:0}}
+.fx-zoom{animation:fxZoom .7s ease-out}
+@keyframes fxZoom{0%{scale:1}30%{scale:1.05}100%{scale:1}}
+#bg.fx-zoom,#bg2.fx-zoom{transform-origin:68% 30%}
+.sprite.fx-zoom{transform-origin:50% 25%}
+body.fx-shake .panel,body.fx-shake .bottom-row,body.fx-shake #bg,body.fx-shake .sprite{animation:fxShake .45s}
+@keyframes fxShake{15%{translate:-10px 4px}30%{translate:9px -5px}45%{translate:-7px 3px}60%{translate:6px -2px}75%{translate:-3px 1px}}
+/* 残り30秒 */
+#timer.danger{color:#ff3b4a;animation:pulse 1s infinite}
+@keyframes pulse{50%{transform:scale(1.15);text-shadow:0 0 16px rgba(255,40,60,.9)}}
+/* 勝敗カットイン */
+.fx-layer.oc{background:rgba(0,0,0,.65)}
+.oc-band{position:absolute;left:-10%;top:30%;width:120%;height:40%;transform:rotate(-7deg);box-shadow:0 0 0 8px #111;animation:vsL .35s cubic-bezier(.2,.9,.3,1) both}
+.oc-band.win{background:repeating-linear-gradient(-45deg,#ffd400 0 34px,#f5c400 34px 68px)}
+.oc-band.gold{background:linear-gradient(90deg,#8a6a00,#ffe066 30%,#fff3b0 50%,#ffd400 70%,#8a6a00)}
+.oc-band.lose{background:repeating-linear-gradient(-45deg,#5a0a10 0 34px,#3a0508 34px 68px)}
+.oc-title{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) rotate(-7deg);font:900 7rem/1 "DoroBrush",serif;color:#fff;-webkit-text-stroke:6px #111;paint-order:stroke fill;text-shadow:8px 8px 0 #000;white-space:nowrap;animation:vsPop .45s .12s cubic-bezier(.2,1.5,.4,1) both}
+.oc-win .oc-title,.oc-clear .oc-title{color:#111;-webkit-text-stroke:0;text-shadow:5px 5px 0 #fff}
+.oc-sub{position:absolute;left:50%;top:62%;transform:translate(-50%,-50%) rotate(-7deg);font-weight:900;font-size:2.4rem;letter-spacing:.4em;background:#111;color:#ffd400;padding:.2rem 1.2rem .2rem 1.6rem;animation:vsR .4s .25s both}
+.oc-lose .oc-sub{color:#ff6b75}
+.oc-stamp{position:absolute;right:12%;top:20%;width:11rem;height:11rem;border:.6rem solid #d7263d;border-radius:50%;color:#d7263d;display:flex;align-items:center;justify-content:center;text-align:center;font:900 3.2rem/1.05 "DoroBrush",serif;background:rgba(255,255,255,.08);transform:rotate(-14deg);animation:slam .32s .5s cubic-bezier(.3,1.6,.5,1) both;box-shadow:0 0 0 4px rgba(215,38,61,.25)}
+.oc-stamp.st-jihyo{border-radius:.3rem;width:8rem;height:13rem;writing-mode:vertical-rl;background:#fff;color:#111;border-color:#111;font-size:3.6rem}
+.oc-stamp.gold{border-color:#ffd400;color:#ffd400;font-size:2.4rem;background:rgba(0,0,0,.4)}
+.oc-stamp.lose{border-color:#ff3b4a;color:#ff3b4a;border-radius:.4rem}
+@keyframes slam{0%{transform:rotate(-14deg) scale(3.2);opacity:0}70%{transform:rotate(-14deg) scale(.92);opacity:1}100%{transform:rotate(-14deg) scale(1)}}
+.oc-clock{position:absolute;left:50%;top:22%;transform:translateX(-50%);font-size:7rem;animation:clockShake .25s 4 both}
+@keyframes clockShake{50%{transform:translateX(-50%) rotate(14deg)}}
+.oc-snow{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(2px 2px at 20% 30%,#fff8,transparent),radial-gradient(3px 3px at 70% 20%,#fff6,transparent),radial-gradient(2px 2px at 40% 70%,#fff7,transparent),radial-gradient(3px 3px at 85% 60%,#fff5,transparent),radial-gradient(2px 2px at 10% 80%,#fff6,transparent);background-size:300px 300px;animation:snow 3s linear infinite}
+@keyframes snow{to{background-position:0 300px}}
+@media (max-width:900px){.vs-mark{font-size:5rem}.vs-boss img{width:7rem;height:7rem}.oc-title{font-size:4rem}.oc-stamp{width:7rem;height:7rem;font-size:2rem}}
+/* 動きを減らす設定: 揺れ・ズーム・スライドを抑え、フラッシュも弱く */
+@media (prefers-reduced-motion: reduce){
+  .vs-band,.vs-mark,.vs-boss,.vs-you,.oc-band,.oc-title,.oc-sub,.oc-stamp,.oc-clock,.oc-snow,.fx-zoom,#timer.danger,body.fx-shake .panel,body.fx-shake #bg,body.fx-shake .sprite{animation:none!important}
+  .fx-flash.on.good,.fx-flash.on.bad{animation:flash .5s ease-out both;opacity:.35}
+  .fx-pop{animation:none;opacity:1;transition:opacity .3s}
+}

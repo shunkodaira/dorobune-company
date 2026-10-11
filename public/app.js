@@ -123,6 +123,7 @@ async function start(stageId) {
   render(s); hideHints(); setHintCount(s.hintsLeft ?? 3);
   setNpc(stageInfo.intro + '\n\n' + s.history[0].text);
   speakLine(0, s.history[0].text);
+  if (window.FX) FX.vs(stageInfo, s.history[0].expr);
   deadline = Date.now() + s.timeLeft * 1000; timeoutSent = false;
   clearInterval(timerId); timerId = setInterval(tick, 500); tick();
   setSteps(0);
@@ -131,6 +132,7 @@ function tick() {
   const left = Math.max(0, Math.round((deadline - Date.now()) / 1000));
   $('timer').textContent = `${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`;
   $('timer').classList.toggle('warn', left <= 60);
+  if (window.FX) FX.timerWarn(left, !!(state && state.status === 'playing'));
   if (left <= 0 && state && state.status === 'playing' && !timeoutSent) {
     // クライアントのタイマーが0 → サーバに確認(判定はサーバの経過時間)
     timeoutSent = true;
@@ -150,7 +152,8 @@ function onGameOverFromServer(s) {
   render(s);
 }
 function setNpc(text) {
-  $('npcText').classList.remove('thinking'); $('npcText').textContent = text; $('npcText').scrollTop = 0;
+  $('npcText').classList.remove('thinking'); $('npcText').scrollTop = 0;
+  if (window.FX) FX.type($('npcText'), text); else $('npcText').textContent = text;
 }
 // ───── ボスの声: サーバの OpenAI TTS(/api/tts, ストリーム再生)。失敗したらブラウザの speechSynthesis
 // 1つの <audio> を使い回す(最初のクリック/キーで「解錠」→ 以後は自動再生できる)。新しい台詞は前の台詞を止める
@@ -199,13 +202,16 @@ function render(s, last) {
   if (last) {
     const d = $('delta'); d.className = 'delta ' + (last.delta > 0 ? 'up' : last.delta < 0 ? 'down' : '');
     d.textContent = `${last.delta > 0 ? '▲ +' : last.delta < 0 ? '▼ ' : '± '}${last.delta}　${last.reason || ''}`;
+    if (window.FX) FX.big(last.delta);
     if (last.delta < 0) { const b = document.querySelector('.bubble'); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); }
   }
   if (s.status !== 'playing') {
     clearInterval(timerId);
     if (s.loseReason === 'time') $('timer').textContent = '00:00';
     if (s.rankToken) localStorage.setItem(RANK_KEY, s.rankToken); // 役職(署名付き)を保存
-    setTimeout(() => showResult(s), s.loseReason === 'time' ? 3500 : 1800);
+    if (window.FX) FX.timerWarn(0, false);
+    // 最後の台詞を少し見せてから勝敗カットイン → 結果画面
+    setTimeout(() => (window.FX ? FX.outcome(s, stageInfo) : Promise.resolve()).then(() => showResult(s)), s.loseReason === 'time' ? 1800 : 1300);
   }
 }
 // 進行状況は音声パネルの案内文で表示(0=待機 1=話す 2=解析 3=応答)
@@ -355,7 +361,7 @@ $('micBtn').onclick = () => recOn ? stopRec() : startRec();
 // ───── その他UI
 $('form').addEventListener('submit', (e) => { e.preventDefault(); sendText($('input').value); });
 $('input').addEventListener('input', () => { if (!recOn) setSteps($('input').value ? 1 : 0); });
-function ttsUI() { $('ttsBtn').classList.toggle('on', tts); $('ttsBtn').textContent = tts ? '🔊' : '🔇'; $('ttsBtn').title = tts ? 'ボスの声:ON(クリックでミュート)' : 'ボスの声:OFF(クリックでON)'; }
+function ttsUI() { $('ttsBtn').classList.toggle('on', tts); $('ttsBtn').textContent = tts ? '🔊' : '🔇'; $('ttsBtn').title = tts ? 'ボスの声・効果音:ON(クリックでミュート)' : 'ボスの声・効果音:OFF(クリックでON)'; }
 ttsUI();
 $('ttsBtn').onclick = () => {
   tts = !tts; localStorage.setItem(VOICE_KEY, tts ? 'on' : 'off'); ttsUI();
